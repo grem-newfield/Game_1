@@ -1,0 +1,158 @@
+use bevy::{
+    app::AppExit, ecs::system::Command, prelude::*,
+    sprite::collide_aabb::Collision, window::WindowResolution,
+};
+use bevy_rapier2d::prelude::*;
+mod components;
+use components::{Actor, AttackTimer, Enemy, Player, Projectile};
+
+fn main() {
+    App::new()
+        .add_plugins(
+            DefaultPlugins.set(ImagePlugin::default_nearest()).set(
+                WindowPlugin {
+                    primary_window: Some(Window {
+                        resizable: false,
+                        decorations: false,
+                        resolution: WindowResolution::new(256. * 8., 144. * 8.)
+                            .with_scale_factor_override(8.0),
+                        ..default()
+                    }),
+                    ..default()
+                },
+            ),
+        )
+        .add_systems(Startup, (setup, setup_weapons))
+        .add_systems(
+            Update,
+            (
+                move_player,
+                bevy::window::close_on_esc,
+                weapons_system,
+                follow_cam,
+            ),
+        )
+        .run();
+}
+
+fn setup(mut cmd: Commands, asset_server: Res<AssetServer>) {
+    //camera
+    cmd.spawn(Camera2dBundle {
+        // projection: OrthographicProjection {
+        //     scaling_mode: bevy::render::camera::ScalingMode::AutoMin {
+        //         min_width: 256.0,
+        //         min_height: 144.0,
+        //     },
+        //     ..Default::default()
+        // },
+        ..Default::default()
+    });
+
+    //test sprite
+    cmd.spawn((
+        Player { speed: 100.0 },
+        SpriteBundle {
+            texture: asset_server.load("test.png"),
+            transform: Transform::from_xyz(50., 50., 0.),
+            sprite: Sprite {
+                // custom_size: Some(Vec2 { x: 50.0, y: 50.0 }),
+                ..default()
+            },
+            ..default()
+        },
+    ))
+    .with_children(|children| {
+        children.spawn(RigidBody::Dynamic).with_children(|children| {
+            children
+                .spawn(Collider::cuboid(1.0, 2.0))
+                .insert(Sensor)
+                // .insert(TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)))
+                .insert(Friction::coefficient(0.7))
+                .insert(Restitution::coefficient(0.3))
+                .insert(ColliderMassProperties::Density(2.0));
+        });
+    });
+
+    info!("Spawned Test Sprite");
+}
+
+fn keyboard_input(keys: Res<Input<KeyCode>>) {
+    if keys.just_pressed(KeyCode::Space) {
+        println!("Space was pressed")
+    }
+    if keys.just_released(KeyCode::ControlLeft) {
+        println!("Left Ctrl was released")
+    }
+    if keys.pressed(KeyCode::W) {
+        println!("W is being held down")
+    }
+    if keys.pressed(KeyCode::Escape) {
+        println!("Exiting...")
+    }
+    // we can check multiple at once with `.any_*`
+    if keys.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
+        println!("Either the left or right shift are being held down")
+    }
+    if keys.any_just_pressed([KeyCode::Delete, KeyCode::Back]) {
+        println!("Either delete or backspace was just pressed")
+    }
+}
+
+fn move_player(
+    time: Res<Time>,
+    keys: Res<Input<KeyCode>>,
+    mut q: Query<(&mut Transform, &Player, &Children)>,
+) {
+    for (mut transform, player, children) in q.iter_mut() {
+        if keys.pressed(KeyCode::W) {
+            transform.translation.y += player.speed * time.delta_seconds();
+        }
+        if keys.pressed(KeyCode::A) {
+            transform.translation.x -= player.speed * time.delta_seconds();
+        }
+        if keys.pressed(KeyCode::S) {
+            transform.translation.y -= player.speed * time.delta_seconds();
+        }
+        if keys.pressed(KeyCode::D) {
+            transform.translation.x += player.speed * time.delta_seconds();
+        }
+    }
+}
+
+fn follow_cam(
+    mut q: Query<&mut Transform, With<Camera>>,
+    target_q: Query<&Transform, With<Sprite>>,
+) {
+    q.single_mut().translation.lerp(target_q.single().translation, 0.1);
+}
+
+fn collide_actors(mut c: Commands, q: Query<&Actor>) {}
+
+fn collide_projectiles(mut c: Commands, q: Query<&Projectile>) {}
+
+fn collide(
+    mut c: Commands,
+    query_player: Query<&Transform, With<Player>>,
+    query_enemies: Query<&mut Transform, (With<Enemy>, Without<Player>)>,
+) {
+}
+
+fn setup_weapons(mut c: Commands) {
+    c.spawn(AttackTimer {
+        timer: Timer::from_seconds(1.0, TimerMode::Repeating),
+    });
+}
+
+fn weapons_system(
+    mut c: Commands,
+    time: Res<Time>,
+    // mut q_timers: Query<(Entity, &mut AttackTimer)>,
+    mut q_timers: Query<(Entity, &mut AttackTimer)>,
+) {
+    for (e, mut attack_timer) in q_timers.iter_mut() {
+        attack_timer.timer.tick(time.delta());
+        if attack_timer.timer.finished() {
+            info!("Timer Lmao");
+        }
+    }
+}
