@@ -1,8 +1,10 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 pub mod tags {
    use bevy::prelude::*;
-   #[derive(Component)]
-   pub struct MainCamera;
+   // #[derive(Component)]
+   // pub struct MainCamera;
 
    #[derive(Component)]
    pub struct Actor;

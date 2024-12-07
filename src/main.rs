@@ -7,24 +7,28 @@ use bevy::{
    input::keyboard::KeyboardInput,
    prelude::*,
    render::{
+      diagnostic::RenderDiagnosticsPlugin,
       mesh::{self, PrimitiveTopology},
       render_resource::{Extent3d, TextureDescriptor, TextureUsages},
       view::RenderLayers,
    },
    utils::info,
-   window::WindowResolution,
+   window::{WindowResized, WindowResolution},
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 mod components;
 use components::{
-   tags::{Actor, Enemy, MainCamera},
+   tags::{Actor, Enemy},
    AttackTimer, Player, Projectile,
 };
 mod resources;
 use resources::*;
 
-const RES_WIDTH: u32 = 192;
-const RES_HEIGHT: u32 = 108;
+mod animations;
+use animations::*;
+
+const RES_WIDTH: u32 = 192 * 2;
+const RES_HEIGHT: u32 = 108 * 2;
 /// Default render layers for pixel-perfect rendering.
 /// You can skip adding this component, as this is the default.
 const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
@@ -39,9 +43,6 @@ struct InGameCamera;
 
 #[derive(Component)]
 struct OuterCamera;
-
-#[derive(Component)]
-struct Rotate;
 
 fn main() {
    App::new()
@@ -61,12 +62,26 @@ fn main() {
          WorldInspectorPlugin::new(),
       ))
       // .add_plugins(())
-      .add_systems(Startup, (setup, setup_weapons, setup_physics))
+      // .insert_resource(CameraState { projection_scale: 1.0 })
+      .add_systems(PreStartup, (load_sprites))
+      .add_systems(Startup, (setup_misc, setup_player, setup_camera, setup_weapons, setup_physics))
       .add_systems(
          Update,
-         (timeout_projectiles, move_projectiles, move_player, weapons_system, follow_cam),
+         (
+            timeout_projectiles,
+            move_projectiles,
+            move_player,
+            weapons_system,
+            fit_canvas_to_window,
+            follow_cam,
+            // render_gizmos,
+         ),
       )
       .run();
+}
+fn render_gizmos(mut gizmos: Gizmos) {
+   // let sin_t_scaled = ops::sin(time.elapsed_secs()) * 50.;
+   gizmos.arrow_2d(Vec2::ZERO, Vec2::ONE * 10., bevy::color::palettes::css::YELLOW);
 }
 
 fn setup_camera(
@@ -102,37 +117,56 @@ fn setup_camera(
       InGameCamera,
       PIXEL_PERFECT_LAYERS,
    ));
+   cmd.spawn((Sprite::from_image(image_handle), Canvas, HIGH_RES_LAYERS));
+   cmd.spawn((Camera2d, Msaa::Off, OuterCamera, HIGH_RES_LAYERS));
 }
 
-fn setup(
+fn fit_canvas_to_window(
+   mut resize_events: EventReader<WindowResized>,
+   mut projection: Single<&mut OrthographicProjection, With<OuterCamera>>,
+) {
+   for e in resize_events.read() {
+      let h_scale = e.width / RES_WIDTH as f32;
+      let v_scale = e.height / RES_HEIGHT as f32;
+      projection.scale = (1. / h_scale.min(v_scale).round());
+   }
+}
+fn load_sprites(
+   mut cmd: Commands,
+   ass: Res<AssetServer>,
+   // mut sprites: Res<Assets<Image>>,
+) {
+   let basic_projectile_handle: Handle<Image> = ass.load("test.png");
+   cmd.insert_resource(ProjectileArt { basic_projectile: basic_projectile_handle });
+   let player_sprite_handle: Handle<Image> = ass.load("test.png");
+   cmd.insert_resource(Art { player: player_sprite_handle });
+}
+fn setup_player(
    mut cmd: Commands,
    asset_server: Res<AssetServer>,
-   mut windows: Query<&mut Window>,
+   art: Res<Art>,
+   // mut windows: Query<&mut Window>,
 ) {
-   let window = windows.get_single_mut().unwrap();
-
-   //camera
-   cmd.spawn((MainCamera, Camera2d::default()));
-
-   //test sprite
-   let width = window.resolution.width() / 2.;
-   let height = window.resolution.height() / 2.;
-
-   cmd.spawn((Player { speed: 100.0 }, Sprite::from_image(asset_server.load("test.png"))));
+   // let window = windows.get_single_mut().unwrap();
+   // let width = window.resolution.width() / 2.;
+   // let height = window.resolution.height() / 2.;
+   cmd.spawn((
+      Player { speed: 100.0 },
+      Sprite {
+         image: art.player.clone(),
+         // custom_size: Some(Vec2::splat(50.)),
+         ..Default::default()
+      },
+      Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
+   ));
+}
+fn setup_misc(
+   mut cmd: Commands,
+   asset_server: Res<AssetServer>,
+   // mut windows: Query<&mut Window>,
+) {
    cmd.spawn(Sprite::from_image(asset_server.load("test.png")));
-   // .with_children(|children| {
-   // children.spawn(RigidBody::Dynamic).with_children(|children| {
-   // children
-   // .spawn(Collider::cuboid(1.0, 2.0))
-   // .insert(Sensor)
-   // .insert(TransformBundle::from(Transform::from_xyz(0.0, 0.0, 0.0)))
-   // .insert(Friction::coefficient(0.7))
-   // .insert(Restitution::coefficient(0.3))
-   // .insert(ColliderMassProperties::Density(2.0));
-   // });
-   // });
-
-   info!("Spawned Test Sprite");
+   info!("Spawned Static Test Sprite");
 }
 
 fn keyboard_input(keys: Res<ButtonInput<KeyCode>>) {
@@ -177,6 +211,7 @@ fn move_player(
       if keys.pressed(KeyCode::KeyA) {
          // transform.translation.x -= player.speed * time.delta_seconds();
          move_vec.x -= 1.0; //player.speed * time.delta_secs();
+         transform.rotate_z(time.delta_secs() * 3.);
       }
       if keys.pressed(KeyCode::KeyS) {
          // transform.translation.y -= player.speed * time.delta_seconds();
@@ -185,6 +220,7 @@ fn move_player(
       if keys.pressed(KeyCode::KeyD) {
          // transform.translation.x += player.speed * time.delta_seconds();
          move_vec.x += 1.0; //player.speed * time.delta_secs();
+         transform.rotate_z(-time.delta_secs() * 3.);
       }
       if move_vec != Vec3::ZERO {
          transform.translation += move_vec.normalize() * player.speed * time.delta_secs();
@@ -193,16 +229,28 @@ fn move_player(
 }
 
 fn follow_cam(
-   mut cam: Query<&mut Transform, (With<MainCamera>, Without<Player>)>,
-   target: Query<&Transform, (With<Player>, Without<MainCamera>)>,
+   // mut cam: Query<&mut Transform, (With<MainCamera>, Without<Player>)>,
+   mut main_cam: Single<
+      &mut Transform,
+      (With<OuterCamera>, Without<Player>, Without<InGameCamera>),
+   >,
+   mut pixel_cam: Single<
+      &mut Transform,
+      (With<InGameCamera>, Without<Player>, Without<OuterCamera>),
+   >,
+   mut canvas: Single<
+      &mut Transform,
+      (With<Canvas>, Without<Player>, Without<OuterCamera>, Without<InGameCamera>),
+   >,
+   // target: Query<&Transform, (With<Player>, Without<MainCamera>)>,
+   target: Single<&Transform, (With<Player>, Without<OuterCamera>, Without<InGameCamera>)>,
    time: Res<Time>,
 ) {
-   // works
-   // add lerp
-   cam.single_mut().translation = cam
-      .single()
-      .translation
-      .lerp(target.single().translation, (-700.0 * time.delta_secs()).exp2());
+   // cam.translation = cam.translation.lerp(target.translation, (-700.0 * time.delta_secs()).exp2());
+   // cam.translation = cam.translation.lerp(target.translation, 1. * time.delta_secs());
+   main_cam.translation = target.translation;
+   canvas.translation = target.translation;
+   pixel_cam.translation = target.translation;
 }
 
 fn collide_actors(
@@ -255,6 +303,8 @@ fn weapons_system(
    mut c: Commands,
    time: Res<Time>,
    ass: Res<AssetServer>,
+   sprites: Res<Assets<Image>>,
+   projectile_art: Res<ProjectileArt>,
    // mut q_timers: Query<(Entity, &mut AttackTimer)>,
    mut q_timers: Query<(Entity, &mut AttackTimer)>,
 ) {
@@ -267,7 +317,7 @@ fn weapons_system(
             ((
                Projectile { speed: 50.0, lifetime: 1.0 },
                Transform::from_xyz(0.0, 0.0, 0.0),
-               Sprite::from_image(ass.load("test.png")),
+               Sprite::from(projectile_art.basic_projectile.clone()),
                RigidBody::Kinematic,
                Collider::circle(2.0),
                DebugRender::default().with_collider_color(Color::srgb(0.0, 1.0, 0.0)),
