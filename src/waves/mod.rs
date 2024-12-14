@@ -19,6 +19,6 @@ impl Plugin for WavesPlugin {
       app: &mut App,
    ) {
       app.add_systems(OnEnter(AppState::InGame), (setup_waves))
-         .add_systems(Update, (update_waves).run_if(in_state(AppState::InGame)));
+         .add_systems(Update, (waves_s).run_if(in_state(AppState::InGame)));
    }
 }

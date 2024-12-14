@@ -1,10 +1,7 @@
 #![allow(unused)]
 const RES_WIDTH: u32 = 192 * 2;
 const RES_HEIGHT: u32 = 108 * 2;
-/// Default render layers for pixel-perfect rendering.
-/// You can skip adding this component, as this is the default.
 const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
-/// Render layers for high-resolution rendering.
 const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(1);
 
 // == STATES ==
@@ -140,16 +137,7 @@ fn main() {
       .add_systems(Update, menu.run_if(in_state(AppState::MainMenu)))
       .add_systems(OnExit(AppState::MainMenu), cleanup_menu)
       // .add_systems(OnEnter(AppState::InGame), (setup_physics))
-      .add_systems(
-         Update,
-         (
-            // wasd_hardcoded_player_movemement,
-            fit_canvas_to_window,
-            // follow_cam.after(wasd_hardcoded_player_movemement),
-            // render_gizmos,
-         )
-            .run_if(in_state(AppState::InGame)),
-      )
+      .add_systems(Update, (fit_canvas_to_window,).run_if(in_state(AppState::InGame)))
       .run();
 }
 fn render_gizmos(mut gizmos: Gizmos) {
@@ -292,14 +280,6 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use menu::*;
 use std::iter::zip;
 mod components;
-
-// mod diagnostics;
-// use diagnostics::SomeDiagnosticsPlugin;
-
-// use components::{
-//    tags::{Actor, Enemy},
-//    Player, Projectile, TestAttackTimer,
-// };
 
 // mod systems;
 // use systems::*;
