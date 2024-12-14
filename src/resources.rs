@@ -15,3 +15,12 @@ pub struct ProjectileArt {
 pub struct Art {
    pub player: Handle<Image>,
 }
+
+#[derive(Resource)]
+pub enum WaveState {
+   Spawning,
+   Idle,
+}
+
+#[derive(Resource)]
+pub enum EnemyState {}
