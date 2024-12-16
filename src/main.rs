@@ -41,6 +41,7 @@ fn main() {
          PlayerPlugin,
          MenuPlugin,
          DoodadPlugin,
+         SaveLoadPlugin,
       ))
       .init_state::<GameState>()
       // .add_plugins(())
@@ -176,6 +177,7 @@ use bevy::{
    window::{WindowResized, WindowResolution},
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use save_load::SaveLoadPlugin;
 use std::iter::zip;
 
 mod animations;
@@ -187,6 +189,7 @@ mod menu;
 mod pickups;
 mod player;
 mod resources; // Art n shit
+mod save_load;
 mod sprites;
 mod waves;
 
