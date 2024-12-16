@@ -9,7 +9,7 @@ use systems::*;
 
 pub struct AnimationPlugin;
 
-impl Plugin for AnimationConfig {
+impl Plugin for AnimationPlugin {
    fn build(
       &self,
       app: &mut bevy::prelude::App,

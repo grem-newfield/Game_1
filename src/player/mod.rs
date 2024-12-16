@@ -9,7 +9,7 @@ pub use systems::*;
 
 use bevy::prelude::*;
 
-use crate::AppState;
+use crate::GameState;
 
 pub struct PlayerPlugin;
 
@@ -21,7 +21,7 @@ impl Plugin for PlayerPlugin {
       app
          // add_systems(OnEnter(AppState::InGame), ())
          // .add_systems(Update, ().run_if(in_state(AppState::InGame)));
-         .add_systems(OnEnter(AppState::InGame), (setup_player))
+         .add_systems(OnEnter(GameState::InGame), (setup_player))
          .add_systems(
             Update,
             (
@@ -30,7 +30,7 @@ impl Plugin for PlayerPlugin {
                follow_cam.after(wasd_hardcoded_player_movemement),
                // render_gizmos,
             )
-               .run_if(in_state(AppState::InGame)),
+               .run_if(in_state(GameState::InGame)),
          );
    }
 }

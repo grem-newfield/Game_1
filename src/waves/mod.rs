@@ -9,7 +9,7 @@ pub use systems::*;
 
 use bevy::prelude::*;
 
-use crate::AppState;
+use crate::GameState;
 
 pub struct WavesPlugin;
 
@@ -18,7 +18,7 @@ impl Plugin for WavesPlugin {
       &self,
       app: &mut App,
    ) {
-      app.add_systems(OnEnter(AppState::InGame), (setup_waves))
-         .add_systems(Update, (waves_s).run_if(in_state(AppState::InGame)));
+      app.add_systems(OnEnter(GameState::InGame), (setup_waves))
+         .add_systems(Update, (waves_s).run_if(in_state(GameState::InGame)));
    }
 }

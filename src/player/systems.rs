@@ -1,5 +1,5 @@
 use crate::{
-   Art, Canvas, Enemy, InGameCamera, OuterCamera, Player, Projectile, ProjectileArt,
+   Canvas, Enemy, InGameCamera, OuterCamera, Player, Projectile, ProjectileArt, Sprites,
    TestAttackTimer,
 };
 use avian2d::prelude::*;
@@ -56,7 +56,7 @@ pub fn wasd_hardcoded_player_movemement(
 pub fn setup_player(
    mut cmd: Commands,
    asset_server: Res<AssetServer>,
-   art: Res<Art>,
+   sprites: Res<Sprites>,
    // mut windows: Query<&mut Window>,
 ) {
    // let window = windows.get_single_mut().unwrap();
@@ -65,11 +65,7 @@ pub fn setup_player(
    cmd.spawn((
       Name::new("Player"),
       Player { speed: 100.0 },
-      Sprite {
-         image: art.player.clone(),
-         // custom_size: Some(Vec2::splat(50.)),
-         ..Default::default()
-      },
+      sprites.player.clone(),
       Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
    ));
 }

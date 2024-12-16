@@ -10,8 +10,3 @@ use bevy::prelude::*;
 pub struct ProjectileArt {
    pub basic_projectile: Handle<Image>,
 }
-
-#[derive(Resource)]
-pub struct Art {
-   pub player: Handle<Image>,
-}

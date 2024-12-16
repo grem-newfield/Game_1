@@ -1,13 +1,16 @@
 #![allow(unused)]
-const RES_WIDTH: u32 = 192 * 2;
-const RES_HEIGHT: u32 = 108 * 2;
+const RES_WIDTH: u32 = 640;
+const RES_HEIGHT: u32 = 360;
 const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
 const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(1);
 
-// == STATES ==
+// TODO:
+// 1. Fix the STATES switching
+// 2. Finish the GAME
 
+// == STATES ==
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
-enum AppState {
+enum GameState {
    // Loading,
    #[default]
    MainMenu,
@@ -17,127 +20,42 @@ enum AppState {
    GameOver,
 }
 
-// == MENU ==
-mod menu {
-   use super::AppState;
-   use bevy::prelude::*;
-   #[derive(Resource)]
-   pub struct MenuData {
-      pub menu_entity: Entity,
-   }
-
-   const NORMAL_BUTTON_COLOR: Color = Color::srgb(0.5, 0.5, 0.5);
-   const HOVERED_BUTTON_COLOR: Color = Color::srgb(0.7, 0.7, 0.7);
-   const PRESSED_BUTTON_COLOR: Color = Color::srgb(0.3, 0.3, 0.3);
-
-   pub fn setup_menu(mut cmd: Commands) {
-      let play_button_entity = cmd
-         .spawn(Node {
-            // center button
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            ..Default::default()
-         })
-         .with_children(|parent| {
-            parent
-               .spawn((
-                  Button,
-                  Node {
-                     width: Val::Px(150.0),
-                     height: Val::Px(65.0),
-                     justify_content: JustifyContent::Center,
-                     align_items: AlignItems::Center,
-                     ..Default::default()
-                  },
-                  BackgroundColor(NORMAL_BUTTON_COLOR),
-               ))
-               .with_children(|parent| {
-                  parent.spawn((
-                     Text::new("Play"),
-                     TextFont { font_size: 30.0, ..Default::default() },
-                     TextColor(Color::WHITE),
-                  ));
-               });
-         })
-         .id();
-      let menu_horizontal_container_e = cmd
-         .spawn(Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            flex_direction: FlexDirection::Column,
-            justify_content: JustifyContent::Center,
-            align_items: AlignItems::Center,
-            ..Default::default()
-         })
-         .with_children(|parent| {
-            // parent.enqueue_command(cmd.entity(play_button_entity));
-         })
-         .id();
-      cmd.insert_resource(MenuData { menu_entity: menu_horizontal_container_e });
-   }
-
-   pub fn menu(
-      mut next_state: ResMut<NextState<AppState>>,
-      mut interaction_query: Query<
-         (&Interaction, &mut BackgroundColor),
-         (Changed<Interaction>, With<Button>),
-      >,
-   ) {
-      for (inter, mut color) in &mut interaction_query {
-         match *inter {
-            Interaction::Pressed => {
-               *color = PRESSED_BUTTON_COLOR.into();
-               next_state.set(AppState::InGame);
-            }
-            Interaction::Hovered => {
-               *color = HOVERED_BUTTON_COLOR.into();
-            }
-            Interaction::None => {
-               *color = NORMAL_BUTTON_COLOR.into();
-            }
-         }
-      }
-   }
-
-   pub fn cleanup_menu(
-      mut cmd: Commands,
-      menu_data: Res<MenuData>,
-   ) {
-      cmd.entity(menu_data.menu_entity).despawn_recursive();
-   }
-}
-// == /MENU ==
 fn main() {
    App::new()
       .add_plugins((
+         // PhysicsDebugPlugin::default(),
+         // SomeDiagnosticsPlugin,
          DefaultPlugins.set(ImagePlugin::default_nearest()).set(WindowPlugin {
             primary_window: Some(Window {
                resizable: false,
                decorations: false,
-               resolution: WindowResolution::new(1920., 1080.).with_scale_factor_override(1.0),
+               resolution: WindowResolution::new(1920. / 2., 1080. / 2.), //.with_scale_factor_override(1.0),
                ..default()
             }),
             ..default()
          }),
          PhysicsPlugins::default(),
-         // PhysicsDebugPlugin::default(),
          WorldInspectorPlugin::new(),
-         // SomeDiagnosticsPlugin,
          AttacksPlugin,
          WavesPlugin,
          PlayerPlugin,
+         MenuPlugin,
+         DoodadPlugin,
       ))
-      .init_state::<AppState>()
+      .init_state::<GameState>()
       // .add_plugins(())
       // .insert_resource(CameraState { projection_scale: 1.0 })
-      .add_systems(Startup, (load_sprites, setup_cameras))
-      .add_systems(OnEnter(AppState::MainMenu), setup_menu)
-      .add_systems(Update, menu.run_if(in_state(AppState::MainMenu)))
-      .add_systems(OnExit(AppState::MainMenu), cleanup_menu)
-      // .add_systems(OnEnter(AppState::InGame), (setup_physics))
-      .add_systems(Update, (fit_canvas_to_window,).run_if(in_state(AppState::InGame)))
+      .add_systems(
+         Startup,
+         (
+            load_sprite_atlas,
+            (create_sprites).after(load_sprite_atlas),
+            setup_cameras,
+            (fit_canvas_on_startup).after(setup_cameras),
+         ),
+      )
+      .add_systems(OnEnter(GameState::InGame), (setup_physics))
+      .add_systems(Update, (fit_canvas_to_window,).run_if(in_state(GameState::InGame)))
       .run();
 }
 fn render_gizmos(mut gizmos: Gizmos) {
@@ -172,7 +90,7 @@ fn setup_cameras(
       Camera2d,
       Camera {
          order: -1,
-         clear_color: ClearColorConfig::Custom(Color::srgb(0.5, 0.75, 0.75)),
+         clear_color: ClearColorConfig::Custom(Color::BLACK),
          target: bevy::render::camera::RenderTarget::Image(image_handle.clone()),
          ..Default::default()
       },
@@ -184,7 +102,10 @@ fn setup_cameras(
    cmd.spawn((
       Name::new("Main Camera"),
       Camera2d,
-      Camera { clear_color: ClearColorConfig::Custom(Color::BLACK), ..Default::default() },
+      Camera {
+         clear_color: ClearColorConfig::Custom(Color::srgb(0.5, 0.75, 0.75)),
+         ..Default::default()
+      },
       Msaa::Off,
       OuterCamera,
       HIGH_RES_LAYERS,
@@ -201,16 +122,16 @@ fn fit_canvas_to_window(
       projection.scale = (1. / h_scale.min(v_scale).round());
    }
 }
-fn load_sprites(
-   mut cmd: Commands,
-   ass: Res<AssetServer>,
-   // mut sprites: Res<Assets<Image>>,
+
+fn fit_canvas_on_startup(
+   mut win: Single<&mut Window>,
+   mut projection: Single<&mut OrthographicProjection, With<OuterCamera>>,
 ) {
-   let basic_projectile_handle: Handle<Image> = ass.load("test.png");
-   cmd.insert_resource(ProjectileArt { basic_projectile: basic_projectile_handle });
-   let player_sprite_handle: Handle<Image> = ass.load("test.png");
-   cmd.insert_resource(Art { player: player_sprite_handle });
+   let h_scale = win.width() / RES_WIDTH as f32;
+   let v_scale = win.height() / RES_HEIGHT as f32;
+   projection.scale = (1. / h_scale.min(v_scale).round());
 }
+
 // fn setup_misc(
 //    mut cmd: Commands,
 //    asset_server: Res<AssetServer>,
@@ -228,39 +149,17 @@ fn load_sprites(
 //    ));
 // }
 
-// fn collide_actors(
-//    mut c: Commands,
-//    q: Query<&Actor>,
-// ) {
-// }
+fn setup_physics(mut commands: Commands) {
+   /* Create the ground. */
+   commands.spawn(Collider::rectangle(500.0, 50.0)).insert(Transform::from_xyz(0.0, -100.0, 0.0));
 
-// fn collide_projectiles(
-//    mut c: Commands,
-//    q: Query<&Projectile>,
-// ) {
-// }
-//
-// fn collide(
-//    mut c: Commands,
-//    query_player: Query<&Transform, With<Player>>,
-//    query_enemies: Query<&mut Transform, (With<Enemy>, Without<Player>)>,
-// ) {
-// }
-//
-
-// fn setup_physics(mut commands: Commands) {
-/* Create the ground. */
-// commands
-//    .spawn(Collider::cuboid(500.0, 50.0))
-//    .insert(TransformBundle::from(Transform::from_xyz(0.0, -100.0, 0.0)));
-//
-// /* Create the bouncing ball. */
-// commands
-//    .spawn(RigidBody::Dynamic)
-//    .insert(Collider::ball(50.0))
-//    .insert(Restitution::coefficient(0.7))
-//    .insert(TransformBundle::from(Transform::from_xyz(0.0, 400.0, 0.0)));
-// }
+   /* Create the bouncing ball. */
+   commands
+      .spawn(RigidBody::Dynamic)
+      .insert(Collider::circle(50.0))
+      .insert(Restitution::new(0.7))
+      .insert(Transform::from_xyz(0.0, 400.0, 0.0));
+}
 
 use avian2d::prelude::*;
 use bevy::{
@@ -277,19 +176,30 @@ use bevy::{
    window::{WindowResized, WindowResolution},
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use menu::*;
 use std::iter::zip;
+
+mod animations;
+mod attacks;
 mod components;
+mod doodads;
+mod leveling;
+mod menu;
+mod pickups;
+mod player;
+mod resources; // Art n shit
+mod sprites;
+mod waves;
+
+use animations::*;
+use attacks::*;
+use doodads::*;
+use leveling::*;
+use menu::*;
+use pickups::*;
+use player::*;
+use resources::*;
+use sprites::*;
+use waves::*;
 
 // mod systems;
 // use systems::*;
-mod resources; // Art n shit
-use resources::*;
-mod animations;
-use animations::*;
-mod attacks;
-use attacks::*;
-mod player;
-use player::*;
-mod waves;
-use waves::*;
