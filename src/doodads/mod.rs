@@ -20,15 +20,17 @@ impl Plugin for DoodadPlugin {
 
 fn spawn_doodads(
    mut commands: Commands,
-   art: Res<crate::Sprites>,
+   sprites_collection: Res<crate::SpritesCollection>,
 ) {
    // cmd.spawn((Name::new("Static Sprite"), Sprite::from_image(asset_server.load("test.png"))));
    // info!("Spawned Static Test Sprite");
    // test enemy
+   let (sprite, name) = crate::get_sprite(&mut commands, &sprites_collection, "candelabra");
    commands.spawn((
-      Name::new("Doodad :------DD"),
       // crate::Enemy{...},
-      art.test_doodad.clone(),
+      // Sprite::from_image(sprites.map["candelabra"].clone()),
+      sprite,
+      name,
       Transform { translation: Vec3::new(100., 100., 0.), ..Default::default() },
    ));
 }

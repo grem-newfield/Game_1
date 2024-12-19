@@ -3,13 +3,14 @@ pub mod components;
 pub mod resources;
 pub mod systems;
 
+use std::f32::consts::{SQRT_2, TAU};
+
 pub use components::*;
 pub use resources::*;
 pub use systems::*;
 
-use bevy::prelude::*;
-
 use crate::GameState;
+use bevy::prelude::*;
 
 pub struct WavesPlugin;
 

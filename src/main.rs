@@ -5,14 +5,13 @@ const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
 const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(1);
 
 // TODO:
-// 1. Fix the STATES switching
-// 2. Finish the GAME
+// 1. Finish the GAME
 
 // == STATES ==
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 enum GameState {
-   // Loading,
    #[default]
+   Loading,
    MainMenu,
    InGame,
    Paused,
@@ -21,43 +20,49 @@ enum GameState {
 }
 
 fn main() {
-   App::new()
-      .add_plugins((
-         // PhysicsDebugPlugin::default(),
-         // SomeDiagnosticsPlugin,
-         DefaultPlugins.set(ImagePlugin::default_nearest()).set(WindowPlugin {
-            primary_window: Some(Window {
-               resizable: false,
-               decorations: false,
-               resolution: WindowResolution::new(1920. / 2., 1080. / 2.), //.with_scale_factor_override(1.0),
-               ..default()
-            }),
+   let mut app = App::new();
+
+   // BEVY PLUGINS
+   app.add_plugins(
+      (DefaultPlugins.set(ImagePlugin::default_nearest()).set(WindowPlugin {
+         primary_window: Some(Window {
+            resizable: false,
+            decorations: false,
+            resolution: WindowResolution::new(1920. / 2., 1080. / 2.), //.with_scale_factor_override(1.0),
             ..default()
          }),
-         PhysicsPlugins::default(),
-         WorldInspectorPlugin::new(),
-         AttacksPlugin,
-         WavesPlugin,
-         PlayerPlugin,
-         MenuPlugin,
-         DoodadPlugin,
-         SaveLoadPlugin,
-      ))
-      .init_state::<GameState>()
-      // .add_plugins(())
-      // .insert_resource(CameraState { projection_scale: 1.0 })
-      .add_systems(
-         Startup,
-         (
-            load_sprite_atlas,
-            (create_sprites).after(load_sprite_atlas),
-            setup_cameras,
-            (fit_canvas_on_startup).after(setup_cameras),
-         ),
-      )
-      .add_systems(OnEnter(GameState::InGame), (setup_physics))
-      .add_systems(Update, (fit_canvas_to_window,).run_if(in_state(GameState::InGame)))
-      .run();
+         ..default()
+      })),
+   );
+
+   // LIB PLUGINS
+   app.add_plugins((
+      // PhysicsDebugPlugin::default(),
+      PhysicsPlugins::default(),
+      WorldInspectorPlugin::new(),
+   ));
+
+   // MY PLUGINS
+   app.add_plugins((
+      AttacksPlugin,
+      WavesPlugin,
+      PlayerPlugin,
+      MenuPlugin,
+      DoodadPlugin,
+      SaveLoadPlugin,
+      PostProcessPlugin,
+      LoadSpritesPlugin,
+   ));
+
+   // STATE
+   app.init_state::<GameState>();
+
+   // some systems for camera and canvas
+   app.add_systems(Startup, (setup_cameras, (fit_canvas_on_startup).after(setup_cameras)))
+      .add_systems(Update, (fit_canvas_to_window,).run_if(in_state(GameState::InGame)));
+
+   // RUN
+   app.run();
 }
 fn render_gizmos(mut gizmos: Gizmos) {
    // let sin_t_scaled = ops::sin(time.elapsed_secs()) * 50.;
@@ -96,7 +101,7 @@ fn setup_cameras(
          ..Default::default()
       },
       Msaa::Off,
-      InGameCamera,
+      CanvasCamera,
       PIXEL_PERFECT_LAYERS,
    ));
    cmd.spawn((Sprite::from_image(image_handle), Canvas, HIGH_RES_LAYERS));
@@ -108,14 +113,14 @@ fn setup_cameras(
          ..Default::default()
       },
       Msaa::Off,
-      OuterCamera,
+      MainCamera,
       HIGH_RES_LAYERS,
    ));
 }
 
 fn fit_canvas_to_window(
    mut resize_events: EventReader<WindowResized>,
-   mut projection: Single<&mut OrthographicProjection, With<OuterCamera>>,
+   mut projection: Single<&mut OrthographicProjection, With<MainCamera>>,
 ) {
    for e in resize_events.read() {
       let h_scale = e.width / RES_WIDTH as f32;
@@ -126,7 +131,7 @@ fn fit_canvas_to_window(
 
 fn fit_canvas_on_startup(
    mut win: Single<&mut Window>,
-   mut projection: Single<&mut OrthographicProjection, With<OuterCamera>>,
+   mut projection: Single<&mut OrthographicProjection, With<MainCamera>>,
 ) {
    let h_scale = win.width() / RES_WIDTH as f32;
    let v_scale = win.height() / RES_HEIGHT as f32;
@@ -162,9 +167,18 @@ fn setup_physics(mut commands: Commands) {
       .insert(Transform::from_xyz(0.0, 400.0, 0.0));
 }
 
+// fn check_loaded(
+//    ass: Res<AssetServer>,
+//    sprite_atlas: Res<MySpriteAtlas>,
+//    sprites: Res<Sprites>,
+// ) {
+//     ass.get_load_state(id);
+// }
+
 use avian2d::prelude::*;
 use bevy::{
    app::AppExit,
+   asset::LoadState,
    input::keyboard::KeyboardInput,
    prelude::*,
    render::{
@@ -173,9 +187,10 @@ use bevy::{
       render_resource::{Extent3d, TextureDescriptor, TextureUsages},
       view::RenderLayers,
    },
-   utils::info,
+   utils::{info, tracing::field::debug},
    window::{WindowResized, WindowResolution},
 };
+use bevy_asset_loader::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use save_load::SaveLoadPlugin;
 use std::iter::zip;
@@ -188,6 +203,7 @@ mod leveling;
 mod menu;
 mod pickups;
 mod player;
+mod postprocessing;
 mod resources; // Art n shit
 mod save_load;
 mod sprites;
@@ -200,6 +216,7 @@ use leveling::*;
 use menu::*;
 use pickups::*;
 use player::*;
+use postprocessing::*;
 use resources::*;
 use sprites::*;
 use waves::*;

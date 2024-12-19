@@ -66,9 +66,9 @@ pub fn setup_menu(mut cmd: Commands) {
    //    .id();
    let menu_horizontal_container_e = cmd
       .spawn(Node {
+         // root container
          width: Val::Percent(100.0),
          height: Val::Percent(100.0),
-         flex_direction: FlexDirection::Column,
          justify_content: JustifyContent::Center,
          align_items: AlignItems::Center,
          ..Default::default()
@@ -77,11 +77,12 @@ pub fn setup_menu(mut cmd: Commands) {
          parent
             .spawn(
                (Node {
-                  // center button
+                  // menu container
                   width: Val::Percent(100.0),
                   height: Val::Percent(100.0),
                   justify_content: JustifyContent::Center,
                   align_items: AlignItems::Center,
+                  flex_direction: FlexDirection::Column,
                   ..Default::default()
                }),
             )

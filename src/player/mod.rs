@@ -18,19 +18,21 @@ impl Plugin for PlayerPlugin {
       &self,
       app: &mut App,
    ) {
-      app
-         // add_systems(OnEnter(AppState::InGame), ())
-         // .add_systems(Update, ().run_if(in_state(AppState::InGame)));
-         .add_systems(OnEnter(GameState::InGame), (setup_player))
-         .add_systems(
-            Update,
-            (
-               wasd_hardcoded_player_movemement,
-               // fit_canvas_to_window,
-               follow_cam.after(wasd_hardcoded_player_movemement),
-               // render_gizmos,
-            )
-               .run_if(in_state(GameState::InGame)),
-         );
+      // add_systems(OnEnter(AppState::InGame), ())
+      // .add_systems(Update, ().run_if(in_state(AppState::InGame)));
+      // app.add_systems(OnEnter(GameState::MainMenu), (setup_cursor)).add_systems(
+      //    FixedUpdate,
+      //    (draw_cursor).run_if(in_state(GameState::InGame).or(in_state(GameState::MainMenu))),
+      // );
+      app.add_systems(OnEnter(GameState::InGame), (setup_player)).add_systems(
+         FixedUpdate,
+         (
+            wasd_hardcoded_player_movemement,
+            // fit_canvas_to_window,
+            follow_cam.after(wasd_hardcoded_player_movemement),
+            // render_gizmos,
+         )
+            .run_if(in_state(GameState::InGame)),
+      );
    }
 }

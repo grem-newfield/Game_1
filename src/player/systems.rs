@@ -1,9 +1,9 @@
 use crate::{
-   Canvas, Enemy, InGameCamera, OuterCamera, Player, Projectile, ProjectileArt, Sprites,
+   get_sprite, player::components::*, Enemy, Projectile, ProjectileArt, SpritesCollection,
    TestAttackTimer,
 };
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{ecs::bundle, prelude::*, reflect::Map};
 
 const UP: Vec3 = Vec3::new(0.0, 0.0, 1.0);
 
@@ -37,7 +37,7 @@ pub fn wasd_hardcoded_player_movemement(
    if keys.pressed(KeyCode::KeyA) {
       // transform.translation.x -= player.speed * time.delta_seconds();
       move_vec.x -= 1.0; //player.speed * time.delta_secs();
-      transform.rotate_z(time.delta_secs() * 3.);
+                         // transform.rotate_z(time.delta_secs() * 3.);
    }
    if keys.pressed(KeyCode::KeyS) {
       // transform.translation.y -= player.speed * time.delta_seconds();
@@ -46,7 +46,7 @@ pub fn wasd_hardcoded_player_movemement(
    if keys.pressed(KeyCode::KeyD) {
       // transform.translation.x += player.speed * time.delta_seconds();
       move_vec.x += 1.0; //player.speed * time.delta_secs();
-      transform.rotate_z(-time.delta_secs() * 3.);
+                         // transform.rotate_z(-time.delta_secs() * 3.);
    }
    if move_vec != Vec3::ZERO {
       transform.translation += move_vec.normalize() * player.speed * time.delta_secs();
@@ -56,35 +56,34 @@ pub fn wasd_hardcoded_player_movemement(
 pub fn setup_player(
    mut cmd: Commands,
    asset_server: Res<AssetServer>,
-   sprites: Res<Sprites>,
+   sprites: Res<SpritesCollection>,
    // mut windows: Query<&mut Window>,
 ) {
    // let window = windows.get_single_mut().unwrap();
    // let width = window.resolution.width() / 2.;
    // let height = window.resolution.height() / 2.;
+   let (sprite, name) = get_sprite(&mut cmd, &sprites, "player");
    cmd.spawn((
-      Name::new("Player"),
+      sprite,
+      name,
       Player { speed: 100.0 },
-      sprites.player.clone(),
-      Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
+      // Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
+      Transform::from_xyz(0., 0., 99.),
    ));
 }
 pub fn follow_cam(
    // mut cam: Query<&mut Transform, (With<MainCamera>, Without<Player>)>,
-   mut main_cam: Single<
-      &mut Transform,
-      (With<OuterCamera>, Without<Player>, Without<InGameCamera>),
-   >,
+   mut main_cam: Single<&mut Transform, (With<MainCamera>, Without<Player>, Without<CanvasCamera>)>,
    mut pixel_cam: Single<
       &mut Transform,
-      (With<InGameCamera>, Without<Player>, Without<OuterCamera>),
+      (With<CanvasCamera>, Without<Player>, Without<MainCamera>),
    >,
    mut canvas: Single<
       &mut Transform,
-      (With<Canvas>, Without<Player>, Without<OuterCamera>, Without<InGameCamera>),
+      (With<Canvas>, Without<Player>, Without<MainCamera>, Without<CanvasCamera>),
    >,
    // target: Query<&Transform, (With<Player>, Without<MainCamera>)>,
-   target: Single<&Transform, (With<Player>, Without<OuterCamera>, Without<InGameCamera>)>,
+   target: Single<&Transform, (With<Player>, Without<MainCamera>, Without<CanvasCamera>)>,
    time: Res<Time>,
 ) {
    // cam.translation = cam.translation.lerp(target.translation, (-700.0 * time.delta_secs()).exp2());
@@ -92,4 +91,31 @@ pub fn follow_cam(
    main_cam.translation = target.translation;
    canvas.translation = target.translation;
    pixel_cam.translation = target.translation;
+}
+
+pub fn setup_cursor(
+   mut commands: Commands,
+   sprites_collection: Res<SpritesCollection>,
+) {
+   let (sprite, name) = get_sprite(&mut commands, &sprites_collection, "cursor");
+   commands.spawn((sprite, name, Transform::from_xyz(0.0, 0.0, 100.0), CursorTag));
+}
+
+pub fn draw_cursor(
+   mut cmd: Commands,
+   window: Single<&Window>,
+   q: Single<(&Camera, &GlobalTransform), With<MainCamera>>,
+   mut cursor_sprite: Single<&mut Transform, With<CursorTag>>,
+) {
+   let (camera, camera_transform) = *q;
+   let Some(cur_pos) = window.cursor_position() else {
+      return;
+   };
+   let Ok(point) = camera.viewport_to_world_2d(camera_transform, cur_pos) else {
+      return;
+   };
+   cursor_sprite.translation = Vec3::new(point.x, point.y, 100.0);
+
+   // if let Some(cur_pos) = window.cursor_position()
+   // .and_then(|cursor| cam.viewport_to_world_2d(cam_trans,cursor)).map(|ray| ray.);
 }

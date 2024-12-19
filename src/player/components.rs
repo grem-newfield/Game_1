@@ -6,6 +6,8 @@ pub struct Player {
 #[derive(Component)]
 pub struct Canvas;
 #[derive(Component)]
-pub struct InGameCamera;
+pub struct CanvasCamera;
 #[derive(Component)]
-pub struct OuterCamera;
+pub struct MainCamera;
+#[derive(Component)]
+pub struct CursorTag;

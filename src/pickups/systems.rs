@@ -1,9 +1,9 @@
-use crate::{Credit, Health, Player, PlayerState, PowerUp, Sprites};
+use crate::{Credit, Health, Player, PlayerState, PowerUp, SpritesCollection};
 use bevy::prelude::*;
 
 pub fn spawn_pickups_s(
    mut c: Commands,
-   mut art: Res<Sprites>,
+   mut art: Res<SpritesCollection>,
 ) {
    // c.spawn((Sprite::from_image(art.  a  .clone())));
 }
