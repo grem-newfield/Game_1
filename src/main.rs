@@ -36,11 +36,14 @@ fn main() {
    );
 
    // LIB PLUGINS
+   app.add_plugins((WorldInspectorPlugin::new(), InputManagerPlugin::<Action>::default()));
+
+   // PHYSICS PLUGIN
    app.add_plugins((
       // PhysicsDebugPlugin::default(),
-      PhysicsPlugins::default(),
-      WorldInspectorPlugin::new(),
-   ));
+      PhysicsPlugins::default().with_length_unit(10.0),
+   ))
+   .insert_resource(Gravity(Vec2::ZERO));
 
    // MY PLUGINS
    app.add_plugins((
@@ -52,6 +55,7 @@ fn main() {
       SaveLoadPlugin,
       PostProcessPlugin,
       LoadSpritesPlugin,
+      InGameUiPlugin,
    ));
 
    // STATE
@@ -192,6 +196,7 @@ use bevy::{
 };
 use bevy_asset_loader::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use leafwing_input_manager::prelude::*;
 use save_load::SaveLoadPlugin;
 use std::iter::zip;
 
@@ -207,6 +212,7 @@ mod postprocessing;
 mod resources; // Art n shit
 mod save_load;
 mod sprites;
+mod ui;
 mod waves;
 
 use animations::*;
@@ -219,6 +225,7 @@ use player::*;
 use postprocessing::*;
 use resources::*;
 use sprites::*;
+use ui::*;
 use waves::*;
 
 // mod systems;

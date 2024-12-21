@@ -1,23 +1,51 @@
 use crate::{
-   get_sprite, player::components::*, Enemy, Projectile, ProjectileArt, SpritesCollection,
-   TestAttackTimer,
+   get_sprite, player::components::*, Action, Enemy, PlayerMoveEvent, Projectile, ProjectileArt,
+   SpritesCollection, TestAttackTimer,
 };
 use avian2d::prelude::*;
-use bevy::{ecs::bundle, prelude::*, reflect::Map};
+use bevy::{ecs::bundle, prelude::*};
+use leafwing_input_manager::prelude::*;
 
 const UP: Vec3 = Vec3::new(0.0, 0.0, 1.0);
 
-// TODO: add binding and more keys?
-pub fn player_input_system() {}
+pub fn player_moves(
+   mut ew: EventWriter<PlayerMoveEvent>,
+   action_state: Single<&ActionState<Action>, With<Player>>,
+) {
+   let mut direction_vec = Vec2::ZERO;
+   for input_dir in Action::DIRECTIONS {
+      if action_state.pressed(&input_dir) {
+         if let Some(direction) = input_dir.direction() {
+            direction_vec += *direction;
+         }
+      }
+   }
+   let net_direction = Dir2::new(direction_vec);
+   if let Ok(direction) = net_direction {
+      ew.send(PlayerMoveEvent { direction });
+   };
+}
 
-pub fn wasd_hardcoded_player_movemement(
+pub fn move_player(
+   mut e_move: EventReader<PlayerMoveEvent>,
+   time: Res<Time>,
+   mut player_transform: Single<&mut Transform, With<Player>>,
+   mut player: Single<&Player>,
+) {
+   for e in e_move.read() {
+      let move_vec = e.direction * player.speed * time.delta_secs();
+      player_transform.translation += Vec3::new(move_vec.x, move_vec.y, 0.0);
+   }
+}
+
+pub fn player_move_old(
    time: Res<Time>,
    keys: Res<ButtonInput<KeyCode>>,
    // mut q: Query<&mut Transform, With<Player>>,
    // mut p: Query<&Player>,
-   mut transform: Single<&mut Transform, With<Player>>,
+   mut player_transform: Single<&mut Transform, With<Player>>,
    mut player: Single<&Player>,
-   mut exit: EventWriter<AppExit>,
+   mut exit_event_writer: EventWriter<AppExit>,
 ) {
    // for mut velocity in &mut query {
    //         velocity.y -= 9.8 * DELTA;
@@ -28,7 +56,7 @@ pub fn wasd_hardcoded_player_movemement(
    // info!("{:?}", player);
    let mut move_vec = Vec3::ZERO;
    if keys.pressed(KeyCode::KeyQ) {
-      exit.send(AppExit::Success);
+      exit_event_writer.send(AppExit::Success);
    }
    if keys.pressed(KeyCode::KeyW) {
       // transform.translation.y += player.speed * time.delta_seconds();
@@ -49,7 +77,7 @@ pub fn wasd_hardcoded_player_movemement(
                          // transform.rotate_z(-time.delta_secs() * 3.);
    }
    if move_vec != Vec3::ZERO {
-      transform.translation += move_vec.normalize() * player.speed * time.delta_secs();
+      player_transform.translation += move_vec.normalize() * player.speed * time.delta_secs();
    }
    // }
 }
@@ -62,6 +90,18 @@ pub fn setup_player(
    // let window = windows.get_single_mut().unwrap();
    // let width = window.resolution.width() / 2.;
    // let height = window.resolution.height() / 2.;
+
+   let input_map = InputMap::new([
+      (Action::Left, KeyCode::KeyA),
+      (Action::Left, KeyCode::ArrowLeft),
+      (Action::Right, KeyCode::KeyD),
+      (Action::Right, KeyCode::ArrowRight),
+      (Action::Up, KeyCode::KeyW),
+      (Action::Up, KeyCode::ArrowUp),
+      (Action::Down, KeyCode::KeyS),
+      (Action::Down, KeyCode::ArrowDown),
+   ]);
+
    let (sprite, name) = get_sprite(&mut cmd, &sprites, "player");
    cmd.spawn((
       sprite,
@@ -69,6 +109,7 @@ pub fn setup_player(
       Player { speed: 100.0 },
       // Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
       Transform::from_xyz(0., 0., 99.),
+      InputManagerBundle::with_map(input_map),
    ));
 }
 pub fn follow_cam(
@@ -88,9 +129,44 @@ pub fn follow_cam(
 ) {
    // cam.translation = cam.translation.lerp(target.translation, (-700.0 * time.delta_secs()).exp2());
    // cam.translation = cam.translation.lerp(target.translation, 1. * time.delta_secs());
-   main_cam.translation = target.translation;
-   canvas.translation = target.translation;
-   pixel_cam.translation = target.translation;
+
+   // main_cam.translation = target.translation;
+   // canvas.translation = target.translation;
+   // pixel_cam.translation = target.translation;
+
+   let smooth_time = 0.3; // This controls how quickly the camera reaches the target. Lower values make it faster.
+
+   let mut cam_velocity = Vec3::ZERO;
+   let mut pixel_cam_velocity = Vec3::ZERO;
+   let mut canvas_velocity = Vec3::ZERO;
+
+   for (cam, velocity, target_pos) in [
+      (&mut main_cam.translation, &mut cam_velocity, target.translation),
+      (&mut pixel_cam.translation, &mut pixel_cam_velocity, target.translation),
+      (&mut canvas.translation, &mut canvas_velocity, target.translation),
+   ]
+   .iter_mut()
+   {
+      cam.x = smooth_damp(cam.x, target_pos.x, &mut velocity.x, smooth_time, time.delta_secs());
+      cam.y = smooth_damp(cam.y, target_pos.y, &mut velocity.y, smooth_time, time.delta_secs());
+      cam.z = smooth_damp(cam.z, target_pos.z, &mut velocity.z, smooth_time, time.delta_secs());
+   }
+}
+
+fn smooth_damp(
+   current: f32,
+   target: f32,
+   current_velocity: &mut f32,
+   smooth_time: f32,
+   delta_time: f32,
+) -> f32 {
+   let omega = 2.0 / smooth_time;
+   let x = omega * delta_time;
+   let exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
+   let change = current - target;
+   let temp = (*current_velocity + omega * change) * delta_time;
+   *current_velocity = (*current_velocity - omega * temp) * exp;
+   target + (change + temp) * exp
 }
 
 pub fn setup_cursor(

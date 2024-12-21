@@ -27,12 +27,14 @@ impl Plugin for PlayerPlugin {
       app.add_systems(OnEnter(GameState::InGame), (setup_player)).add_systems(
          FixedUpdate,
          (
-            wasd_hardcoded_player_movemement,
+            player_moves,
+            move_player,
             // fit_canvas_to_window,
-            follow_cam.after(wasd_hardcoded_player_movemement),
+            follow_cam.after(move_player),
             // render_gizmos,
          )
             .run_if(in_state(GameState::InGame)),
       );
+      app.add_event::<PlayerMoveEvent>();
    }
 }

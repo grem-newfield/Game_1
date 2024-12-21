@@ -22,19 +22,6 @@ impl WaveSpawnConfig {
 }
 
 #[derive(Component, Debug)]
-pub struct Enemy {
-   pub speed: f32,
-   pub health: u32,
-   pub scale: f32,
-}
-
-impl Enemy {
-   pub fn default(&self) -> Self {
-      Self { speed: 100.0, health: 100, scale: 1.0 }
-   }
-}
-
-#[derive(Component, Debug)]
 pub struct Shooter {
    pub attack_timer: Timer,
 }
