@@ -1,11 +1,28 @@
 use bevy::prelude::*;
 
 // prob dont even need this
-#[derive(Resource)]
-pub enum WaveState {
-   Spawning,
-   Idle,
+#[derive(Resource, Default)]
+pub struct WaveState {
+   pub difficulty: usize,
+   pub mob_count: u32,
 }
 
 #[derive(Resource)]
-pub enum EnemyState {}
+pub struct WaveSpawnConfig {
+   pub wave_difficulty_timer: Timer,
+   pub spawn_timer: Timer,
+   pub boss_spawn_timer: Timer,
+}
+
+impl Default for WaveSpawnConfig {
+   fn default() -> Self {
+      Self {
+         // wave difficulty every 5 min
+         wave_difficulty_timer: Timer::from_seconds(5.0 * 60.0, TimerMode::Once),
+         // mob every 1 sec
+         spawn_timer: Timer::from_seconds(1.0, TimerMode::Once),
+         // boss every 10 min
+         boss_spawn_timer: Timer::from_seconds(10.0 * 60.0, TimerMode::Once),
+      }
+   }
+}

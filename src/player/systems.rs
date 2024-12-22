@@ -106,7 +106,7 @@ pub fn setup_player(
    cmd.spawn((
       sprite,
       name,
-      Player { speed: 100.0 },
+      Player { speed: 100.0, last_position: Vec3::ZERO },
       // Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
       Transform::from_xyz(0., 0., 99.),
       InputManagerBundle::with_map(input_map),
@@ -129,10 +129,12 @@ pub fn follow_cam(
 ) {
    // cam.translation = cam.translation.lerp(target.translation, (-700.0 * time.delta_secs()).exp2());
    // cam.translation = cam.translation.lerp(target.translation, 1. * time.delta_secs());
-
-   // main_cam.translation = target.translation;
-   // canvas.translation = target.translation;
-   // pixel_cam.translation = target.translation;
+   {
+      main_cam.translation = target.translation;
+      canvas.translation = target.translation;
+      pixel_cam.translation = target.translation;
+   }
+   return;
 
    let smooth_time = 0.3; // This controls how quickly the camera reaches the target. Lower values make it faster.
 

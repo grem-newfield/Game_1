@@ -28,7 +28,7 @@ fn main() {
          primary_window: Some(Window {
             resizable: false,
             decorations: false,
-            resolution: WindowResolution::new(1920. / 2., 1080. / 2.), //.with_scale_factor_override(1.0),
+            // resolution: WindowResolution::new(1920., 1080.), //.with_scale_factor_override(2.0),
             ..default()
          }),
          ..default()
@@ -43,6 +43,7 @@ fn main() {
       // PhysicsDebugPlugin::default(),
       PhysicsPlugins::default().with_length_unit(10.0),
    ))
+   .insert_resource(SubstepCount(3))
    .insert_resource(Gravity(Vec2::ZERO));
 
    // MY PLUGINS
@@ -56,6 +57,7 @@ fn main() {
       PostProcessPlugin,
       LoadSpritesPlugin,
       InGameUiPlugin,
+      TerrainPlugin,
    ));
 
    // STATE
@@ -63,7 +65,7 @@ fn main() {
 
    // some systems for camera and canvas
    app.add_systems(Startup, (setup_cameras, (fit_canvas_on_startup).after(setup_cameras)))
-      .add_systems(Update, (fit_canvas_to_window,).run_if(in_state(GameState::InGame)));
+      .add_systems(FixedUpdate, (fit_canvas_to_window,).run_if(in_state(GameState::InGame)));
 
    // RUN
    app.run();
@@ -109,11 +111,16 @@ fn setup_cameras(
       PIXEL_PERFECT_LAYERS,
    ));
    cmd.spawn((Sprite::from_image(image_handle), Canvas, HIGH_RES_LAYERS));
+   let mut proj = OrthographicProjection::default_2d();
+   proj.scaling_mode =
+      ScalingMode::AutoMax { max_width: RES_WIDTH as f32, max_height: RES_HEIGHT as f32 };
    cmd.spawn((
       Name::new("Main Camera"),
       Camera2d,
+      proj,
       Camera {
          clear_color: ClearColorConfig::Custom(Color::srgb(0.5, 0.75, 0.75)),
+
          ..Default::default()
       },
       Msaa::Off,
@@ -127,9 +134,12 @@ fn fit_canvas_to_window(
    mut projection: Single<&mut OrthographicProjection, With<MainCamera>>,
 ) {
    for e in resize_events.read() {
+      info!("fit_canvas_to_window is disabled");
+      return;
       let h_scale = e.width / RES_WIDTH as f32;
       let v_scale = e.height / RES_HEIGHT as f32;
-      projection.scale = (1. / h_scale.min(v_scale).round());
+      info!("switching from: {} to {}", projection.scale, (1. / h_scale.min(v_scale)));
+      projection.scale = (1. / h_scale.min(v_scale));
    }
 }
 
@@ -137,9 +147,10 @@ fn fit_canvas_on_startup(
    mut win: Single<&mut Window>,
    mut projection: Single<&mut OrthographicProjection, With<MainCamera>>,
 ) {
+   return;
    let h_scale = win.width() / RES_WIDTH as f32;
    let v_scale = win.height() / RES_HEIGHT as f32;
-   projection.scale = (1. / h_scale.min(v_scale).round());
+   projection.scale = (1. / h_scale.min(v_scale));
 }
 
 // fn setup_misc(
@@ -186,6 +197,7 @@ use bevy::{
    input::keyboard::KeyboardInput,
    prelude::*,
    render::{
+      camera::ScalingMode,
       diagnostic::RenderDiagnosticsPlugin,
       mesh::{self, PrimitiveTopology},
       render_resource::{Extent3d, TextureDescriptor, TextureUsages},
@@ -199,6 +211,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use leafwing_input_manager::prelude::*;
 use save_load::SaveLoadPlugin;
 use std::iter::zip;
+use terrain::TerrainPlugin;
 
 mod animations;
 mod attacks;
@@ -212,6 +225,7 @@ mod postprocessing;
 mod resources; // Art n shit
 mod save_load;
 mod sprites;
+mod terrain;
 mod ui;
 mod waves;
 

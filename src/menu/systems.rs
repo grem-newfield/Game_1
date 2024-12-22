@@ -120,7 +120,7 @@ pub fn setup_menu(mut cmd: Commands) {
                   ))
                   .with_children(|parent| {
                      parent.spawn((
-                        Text::new("Settings"),
+                        Text::new("Toggle Fullscreen"),
                         TextFont { font_size: 30.0, ..Default::default() },
                         TextColor(Color::WHITE),
                      ));

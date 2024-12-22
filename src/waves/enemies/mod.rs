@@ -39,6 +39,7 @@ pub fn spawn_slime(
       Enemy { life: 1.0, speed: 50.0, damage: 1.0, knockback_resistance: 0.0, xp: 10 },
       Transform::from_xyz(x, y, 0.0),
       RigidBody::Dynamic,
+      Friction::new(0.0),
       Collider::circle(4.0),
       LockedAxes::ROTATION_LOCKED,
    ));

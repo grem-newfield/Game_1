@@ -27,12 +27,23 @@ impl Plugin for InGameUiPlugin {
    }
 }
 
-fn setup_fps_ui(mut cmd: Commands) {
-   let root =
-      cmd.spawn((Text::new("FPS: "), TextFont { font_size: 42.0, ..default() })).with_child((
+fn setup_fps_ui(
+   mut cmd: Commands,
+   ass: Res<AssetServer>,
+) {
+   let root = cmd
+      .spawn((
+         Text::new("FPS: "),
+         TextFont { font: ass.load("fonts/PPMondwest-Regular.otf"), font_size: 33.0, ..default() },
+      ))
+      .with_child((
          TextSpan::default(),
          (
-            TextFont { font_size: 33.0, ..default() },
+            TextFont {
+               font: ass.load("fonts/PPMondwest-Regular.otf"),
+               font_size: 33.0,
+               ..default()
+            },
             TextColor(bevy::color::palettes::css::GOLD.into()),
          ),
          FpsText,
