@@ -31,6 +31,7 @@ impl Plugin for PlayerPlugin {
             move_player,
             // fit_canvas_to_window,
             follow_cam.after(move_player),
+            handle_player_collisions.after(move_player),
             // render_gizmos,
          )
             .run_if(in_state(GameState::InGame)),

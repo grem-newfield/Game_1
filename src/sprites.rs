@@ -15,6 +15,8 @@ pub struct LoadSpritesPlugin;
 pub struct SpritesCollection {
    #[asset(path = "sprites", collection(typed, mapped))]
    pub map: HashMap<String, Handle<Image>>,
+   #[asset(path = "urizen_onebit_tileset.png")]
+   pub tilemap: Handle<Image>,
    // pub player: Sprite,
    // pub test_doodad: Sprite,
    // pub cursor: Sprite,

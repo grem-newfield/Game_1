@@ -10,9 +10,6 @@ use rand::Rng;
 pub use resources::*;
 pub use systems::*;
 
-pub mod enemies;
-pub use enemies::*;
-
 use crate::{GameState, SpritesCollection};
 use bevy::prelude::*;
 
@@ -23,9 +20,21 @@ impl Plugin for WavesPlugin {
       &self,
       app: &mut App,
    ) {
-      app.add_systems(OnEnter(GameState::InGame), (setup_waves, spawn_test_enemies))
-         .add_systems(FixedUpdate, (waves_s, melee_ai_move).run_if(in_state(GameState::InGame)));
-      app.insert_resource(WaveSpawnConfig::default());
+      app.add_systems(OnEnter(GameState::InGame), (setup_waves)).add_systems(
+         FixedUpdate,
+         (
+            melee_ai,
+            rangers_ai,
+            //
+            move_enemy_projectiles,
+            fade_debris_system,
+            wave_system,
+            timeout_enemy_projectiles,
+            ranged_boss_attack,
+         )
+            .run_if(in_state(GameState::InGame)),
+      );
+      app.insert_resource(WaveSpawnConfig::default()).insert_resource(WaveState::default());
    }
 }
 pub fn spawn_test_enemies(
@@ -36,6 +45,10 @@ pub fn spawn_test_enemies(
    for _ in 0..200 {
       let x = rng.gen_range(-1000..1000) as f32;
       let y = rng.gen_range(-1000..1000) as f32;
-      spawn_slime(&mut cmd, &sprites_collection, x, y);
+      if rng.gen_bool(0.75) {
+         spawn_slime(&mut cmd, &sprites_collection, x, y);
+      } else {
+         spawn_kobold_archer(&mut cmd, &sprites_collection, x, y);
+      }
    }
 }

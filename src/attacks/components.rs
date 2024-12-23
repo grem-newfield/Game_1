@@ -1,8 +1,15 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub struct TestAttackTimer {
+pub struct AttackTimer {
    pub timer: Timer,
+}
+
+#[derive(Component)]
+pub struct TestAttack {
+   pub damage: u32,
+   pub graphic: String,
+   pub debree: String,
 }
 
 #[derive(Component, Debug)]

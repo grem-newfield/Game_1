@@ -36,7 +36,11 @@ fn main() {
    );
 
    // LIB PLUGINS
-   app.add_plugins((WorldInspectorPlugin::new(), InputManagerPlugin::<Action>::default()));
+   app.add_plugins((
+      TilemapPlugin,
+      // WorldInspectorPlugin::new(),
+      InputManagerPlugin::<Action>::default(),
+   ));
 
    // PHYSICS PLUGIN
    app.add_plugins((
@@ -53,11 +57,11 @@ fn main() {
       PlayerPlugin,
       MenuPlugin,
       DoodadPlugin,
-      SaveLoadPlugin,
+      // SaveLoadPlugin,
       PostProcessPlugin,
       LoadSpritesPlugin,
       InGameUiPlugin,
-      TerrainPlugin,
+      // TerrainPlugin,
    ));
 
    // STATE
@@ -104,7 +108,7 @@ fn setup_cameras(
          order: -1,
          clear_color: ClearColorConfig::Custom(Color::BLACK),
          target: bevy::render::camera::RenderTarget::Image(image_handle.clone()),
-         ..Default::default()
+         ..default()
       },
       Msaa::Off,
       CanvasCamera,
@@ -120,8 +124,8 @@ fn setup_cameras(
       proj,
       Camera {
          clear_color: ClearColorConfig::Custom(Color::srgb(0.5, 0.75, 0.75)),
-
-         ..Default::default()
+         hdr: true,
+         ..default()
       },
       Msaa::Off,
       MainCamera,
@@ -207,6 +211,7 @@ use bevy::{
    window::{WindowResized, WindowResolution},
 };
 use bevy_asset_loader::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use leafwing_input_manager::prelude::*;
 use save_load::SaveLoadPlugin;
@@ -218,6 +223,7 @@ mod attacks;
 mod components;
 mod doodads;
 mod leveling;
+mod loot;
 mod menu;
 mod pickups;
 mod player;

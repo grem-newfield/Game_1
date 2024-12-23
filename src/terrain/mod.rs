@@ -9,7 +9,7 @@
 use crate::{get_sprite, GameState, Player, SpritesCollection};
 use avian2d::prelude::*;
 use bevy::prelude::{Transform, *};
-use log::info;
+use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
 
 pub struct TerrainPlugin;
@@ -19,17 +19,94 @@ impl Plugin for TerrainPlugin {
       &self,
       app: &mut App,
    ) {
-      app.add_systems(OnEnter(GameState::InGame), (add_em));
-      app.add_systems(
-         FixedUpdate,
-         (check_player_moved_far_enough).run_if(in_state(GameState::InGame)),
-      );
+      info!("TerrainPlugin disabled");
+      return;
+      app.add_systems(OnEnter(GameState::InGame), (setup_tilemap));
+      app.add_systems(FixedUpdate, (update_tilemap).run_if(in_state(GameState::InGame)));
    }
 }
 
-// prompt:
-// i am making a bevy game and i need some help.
-// <funcs>
+#[derive(Resource)]
+struct GrassTileData {
+   texture_index: usize,
+}
+
+pub fn setup_tilemap(
+   mut commands: Commands,
+   sprites_collection: Res<SpritesCollection>,
+   window: Single<&Window>,
+) {
+   let tile_size = TilemapTileSize { x: 12.0, y: 12.0 };
+   let grid_size = tile_size.into();
+   let map_size = TilemapSize { x: 100, y: 100 };
+
+   let tilemap_e = commands.spawn_empty().id();
+   let mut tile_storage = TileStorage::empty(map_size);
+   // Populate the tilemap with initial tiles
+   let mut rng = rand::thread_rng();
+   for x in 0..map_size.x {
+      for y in 0..map_size.y {
+         let tile_pos = TilePos { x, y };
+         let tile_entity = commands
+            .spawn((TileBundle {
+               position: tile_pos,
+               tilemap_id: TilemapId(tilemap_e),
+               texture_index: TileTextureIndex(rng.gen_range(0..=9)), // Grass tiles (0-9)
+               ..Default::default()
+            },))
+            .id();
+         tile_storage.set(&tile_pos, tile_entity);
+      }
+   }
+   // Insert the tilemap
+   let transform =
+      get_tilemap_center_transform(&map_size, &grid_size, &TilemapType::default(), 0.0);
+   commands.entity(tilemap_e).insert(TilemapBundle {
+      grid_size,
+      map_type: TilemapType::default(),
+      size: map_size,
+      storage: tile_storage,
+      texture: TilemapTexture::Single(sprites_collection.tilemap.clone()),
+      // texture: TilemapTexture::Vector(sprites_collection.map.values().cloned().collect()),
+      tile_size,
+      transform,
+      ..Default::default()
+   });
+}
+fn update_tilemap(
+   mut query: Query<(&mut TileTextureIndex, &TilePos)>,
+   time: Res<Time>,
+   mut player: Single<&mut Player>,
+   player_t: Single<&Transform, With<Player>>,
+) {
+   return;
+   let current_time = time.elapsed_secs_f64();
+   let cur_pos = player_t.translation;
+
+   let mut rng = rand::thread_rng();
+   let distance_moved = player.last_position.distance(cur_pos);
+
+   if distance_moved > 100.0 {
+      player.last_position = cur_pos;
+      for (mut texture_index, tile_pos) in query.iter_mut() {
+         // Change tiles near the player to something interesting
+         if is_near_player(tile_pos, cur_pos) {
+            texture_index.0 = rng.gen_range(10..=15); // Points of interest (10-15)
+         }
+      }
+   }
+}
+fn is_near_player(
+   tile_pos: &TilePos,
+   player_pos: Vec3,
+) -> bool {
+   let tile_center = Vec3::new(
+      tile_pos.x as f32 * 12.0, // Assuming 16x16 tiles
+      tile_pos.y as f32 * 12.0,
+      0.0,
+   );
+   tile_center.distance(player_pos) < 100.0
+}
 fn check_player_moved_far_enough(
    mut cmd: Commands,
    sprites_collection: Res<SpritesCollection>,

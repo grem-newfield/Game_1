@@ -22,3 +22,4 @@ impl Plugin for PickupPlugin {
          .add_systems(Update, (dummy).run_if(in_state(GameState::InGame)));
    }
 }
+fn dummy() {}

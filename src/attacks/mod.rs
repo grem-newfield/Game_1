@@ -20,7 +20,7 @@ impl Plugin for AttacksPlugin {
    ) {
       app.add_systems(OnEnter(GameState::InGame), (setup_weapons)).add_systems(
          Update,
-         (timeout_despawn_projectiles, move_projectiles, weapons_system)
+         (timeout_despawn_projectiles, move_player_projectiles, weapons_system)
             .run_if(in_state(GameState::InGame)),
       );
    }

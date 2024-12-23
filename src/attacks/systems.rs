@@ -1,21 +1,60 @@
-use crate::{Enemy, Player, Projectile, ProjectileArt, TestAttackTimer};
+use crate::{
+   AttackTimer, Boss, Enemy, Player, Projectile, ProjectileArt, SpritesCollection, TestAttack,
+};
 use avian2d::prelude::*;
 use bevy::prelude::*;
+
+pub fn tick_attack_timers(mut q_timers: Query<(&mut AttackTimer)>) {}
+
+pub fn attacks_system() {}
+
+pub fn setup_test_attack(
+   mut cmd: Commands,
+   sprites_collection: Res<SpritesCollection>,
+) {
+}
+pub fn test_attack_system(mut q_timers: Query<&mut AttackTimer, With<TestAttack>>) {}
+
+#[derive(Resource, Default)]
+pub struct ClosestEnemy {
+   // TODO: add res to plugin init
+   x: f32,
+   y: f32,
+}
+
+pub fn set_closest_enemy(
+   mut q_enemies_transforms: Query<&Transform, (With<Enemy>, With<Boss>, Without<Player>)>,
+   q_player_transform: Single<&Transform, (With<Player>, Without<Enemy>)>,
+   mut closest_enemy: ResMut<ClosestEnemy>,
+) {
+   let mut closest_dist = f32::MAX;
+   let mut closest_enemy = Vec2::ZERO;
+   for t in &q_enemies_transforms {
+      let dist = t.translation.distance(q_player_transform.translation);
+      if dist < closest_dist {
+         closest_dist = dist;
+         closest_enemy.x = t.translation.x;
+         closest_enemy.y = t.translation.y;
+      }
+   }
+}
+
 pub fn weapons_system(
-   mut c: Commands,
+   mut cmd: Commands,
    time: Res<Time>,
-   ass: Res<AssetServer>,
-   sprites: Res<Assets<Image>>,
-   projectile_art: Res<ProjectileArt>,
-   // mut q_timers: Query<(Entity, &mut AttackTimer)>,
-   mut q_timers: Query<(Entity, &mut TestAttackTimer)>,
-   mut q_enemies: Query<(Entity), With<Enemy>>,
-   mut q_enemies_transforms: Query<&Transform, (With<Enemy>, Without<Player>)>,
+   sprites_collection: Res<SpritesCollection>,
+   // ass: Res<AssetServer>,
+   // sprites: Res<Assets<Image>>,
+   // projectile_art: Res<ProjectileArt>,
+   // mut q_enemies: Query<(Entity), With<Enemy>>,
+   mut q_timers: Query<&mut AttackTimer, With<TestAttack>>,
+   mut q_enemies_transforms: Query<&Transform, (With<Enemy>, With<Boss>, Without<Player>)>,
    q_player_transform: Single<&Transform, (With<Player>, Without<Enemy>)>,
 ) {
-   for (e, mut attack_timer) in q_timers.iter_mut() {
+   for mut attack_timer in q_timers.iter_mut() {
       attack_timer.timer.tick(time.delta());
       if attack_timer.timer.finished() {
+         attack_timer.timer.reset();
          // info!("moggin the opps");
          // let result = Vec3::splat(10_000_000.);
          let mut closest_dist = f32::MAX;
@@ -29,15 +68,15 @@ pub fn weapons_system(
          }
          match closest_transform {
             Some(t) => {
-               c.spawn(
+               cmd.spawn(
                   ((
-                     Name::new("Boolet"),
-                     Projectile { speed: 50.0, lifetime: 1.0 },
-                     GlobalTransform::from_translation(q_player_transform.translation),
+                     // Name::new("Boolet"),
+                     // Projectile { speed: 50.0, lifetime: 3.0 },
+                     // GlobalTransform::from_translation(q_player_transform.translation),
                      // .look_to(t.translation, UP),
-                     Sprite::from(projectile_art.basic_projectile.clone()),
+                     // Sprite::from(projectile_art.basic_projectile.clone()),
                      RigidBody::Kinematic,
-                     Collider::circle(2.0),
+                     Collider::circle(5.0),
                   )),
                );
                // info!("Spawned projectile");
@@ -69,7 +108,7 @@ pub fn shoot_towards_closest_enemy_on_cooldown_end(
 ) {
 }
 
-pub fn move_projectiles(
+pub fn move_player_projectiles(
    mut c: Commands,
    time: Res<Time>,
    mut q: Query<(Entity, &mut Transform, &Projectile)>,
@@ -97,5 +136,8 @@ pub fn timeout_despawn_projectiles(
 }
 
 pub fn setup_weapons(mut c: Commands) {
-   c.spawn(TestAttackTimer { timer: Timer::from_seconds(1.0, TimerMode::Repeating) });
+   c.spawn((
+      AttackTimer { timer: Timer::from_seconds(1.0, TimerMode::Repeating) },
+      TestAttack { damage: 1, graphic: String::from("dagger"), debree: String::from("dagger") },
+   ));
 }

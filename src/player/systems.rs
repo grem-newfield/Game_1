@@ -1,6 +1,6 @@
 use crate::{
-   get_sprite, player::components::*, Action, Enemy, PlayerMoveEvent, Projectile, ProjectileArt,
-   SpritesCollection, TestAttackTimer,
+   get_sprite, player::components::*, Action, AttackTimer, Enemy, EnemyProjectile, Health,
+   PlayerMoveEvent, PowerUp, Projectile, ProjectileArt, SpritesCollection, TestAttack, XpOrb,
 };
 use avian2d::prelude::*;
 use bevy::{ecs::bundle, prelude::*};
@@ -106,10 +106,18 @@ pub fn setup_player(
    cmd.spawn((
       sprite,
       name,
-      Player { speed: 100.0, last_position: Vec3::ZERO },
+      Player {
+         life: 100,
+         speed: 80.0,
+         last_position: Vec3::ZERO,
+         damage_cooldown: Timer::from_seconds(1.0, TimerMode::Once),
+      },
       // Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
       Transform::from_xyz(0., 0., 99.),
       InputManagerBundle::with_map(input_map),
+      RigidBody::Kinematic,
+      Collider::circle(4.0),
+      CollidingEntities::default(),
    ));
 }
 pub fn follow_cam(
@@ -197,3 +205,56 @@ pub fn draw_cursor(
    // if let Some(cur_pos) = window.cursor_position()
    // .and_then(|cursor| cam.viewport_to_world_2d(cam_trans,cursor)).map(|ray| ray.);
 }
+
+// pub fn handle_player_collisions(q: Query<(Entity, &CollidingEntities), With<Player>>) {
+//    for (e, colliding_e) in &q {
+//       info!("{} colliding with: {:?}", e, colliding_e);
+//    }
+// can collide with:
+// enemy,enemy_projectile -> take dmg
+// loot -> loot logic
+// }
+
+pub fn handle_player_collisions(
+   mut commands: Commands,
+   mut query: Query<(Entity, &CollidingEntities), With<Player>>,
+   enemy_query: Query<&Enemy>,
+   projectile_query: Query<&EnemyProjectile>,
+   health_query: Query<&Health>,
+   powerup_query: Query<&PowerUp>,
+   xporb_query: Query<&XpOrb>,
+) {
+   for (player_entity, colliding_entities) in query.iter_mut() {
+      for &colliding_entity in &colliding_entities.0 {
+         if let Ok(_) = enemy_query.get(colliding_entity) {
+            // Handle collision with enemy
+            info!("Player {:?} colliding with enemy {:?}", player_entity, colliding_entity);
+            // Apply damage to player or other logic
+         } else if let Ok(_) = projectile_query.get(colliding_entity) {
+            // Handle collision with enemy projectile
+            info!(
+               "Player {:?} colliding with enemy projectile {:?}",
+               player_entity, colliding_entity
+            );
+            // Apply damage to player or other logic
+         } else if let Ok(_) = health_query.get(colliding_entity) {
+            // Handle collision with health loot
+            info!("Player {:?} colliding with health loot {:?}", player_entity, colliding_entity);
+            // Apply health to player or other logic
+            commands.entity(colliding_entity).despawn(); // Example: Despawn the loot after collection
+         } else if let Ok(_) = powerup_query.get(colliding_entity) {
+            // Handle collision with power-up loot
+            info!("Player {:?} colliding with power-up loot {:?}", player_entity, colliding_entity);
+            // Apply power-up to player or other logic
+            commands.entity(colliding_entity).despawn(); // Example: Despawn the loot after collection
+         } else if let Ok(_) = xporb_query.get(colliding_entity) {
+            // Handle collision with XP orb loot
+            info!("Player {:?} colliding with XP orb loot {:?}", player_entity, colliding_entity);
+            // Apply XP to player or other logic
+            commands.entity(colliding_entity).despawn(); // Example: Despawn the loot after collection
+         }
+      }
+   }
+}
+
+fn check_level_up() {}

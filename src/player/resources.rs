@@ -4,6 +4,9 @@ use leafwing_input_manager::prelude::*;
 #[derive(Resource)]
 pub struct PlayerState {
    pub pickup_range: f32,
+   xp: f32,
+   level: u32,
+   kills: u32,
 }
 
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
