@@ -10,12 +10,6 @@ use bevy::prelude::*;
 // pub struct Actor;
 // }
 
-#[derive(Component, Debug)]
-pub struct Player {
-   pub speed: f32,
-   pub health: u32,
-}
-
 // #[derive(Component)]
 // pub struct TestAttackTimer {
 //    pub timer: Timer,

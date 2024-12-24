@@ -7,6 +7,9 @@ pub use components::*;
 pub use resources::*;
 pub use systems::*;
 
+pub mod dagger_a;
+pub use dagger_a::*;
+
 use bevy::prelude::*;
 
 use crate::GameState;
@@ -18,9 +21,19 @@ impl Plugin for AttacksPlugin {
       &self,
       app: &mut App,
    ) {
-      app.add_systems(OnEnter(GameState::InGame), (setup_weapons)).add_systems(
-         Update,
-         (timeout_despawn_projectiles, move_player_projectiles, weapons_system)
+      // RES
+      app.insert_resource(ClosestEnemy::default());
+      // ENTER
+      app.add_systems(OnEnter(GameState::InGame), (add_dagger_attack));
+      // UPDATE
+      app.add_systems(
+         FixedUpdate,
+         (
+            tick_attack_timers,
+            timeout_dagger_attack_projectiles,
+            set_closest_enemy,
+            dagger_attack_system.after(set_closest_enemy),
+         )
             .run_if(in_state(GameState::InGame)),
       );
    }

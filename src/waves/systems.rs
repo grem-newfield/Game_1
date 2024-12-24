@@ -1,11 +1,15 @@
 use std::f32::consts::PI;
 
 use crate::{
-   get_sprite, Boss, Debris, Enemy, EnemyKind, EnemyProjectile, GameState, Melee, Player, Ranged,
-   SpritesCollection, WaveSpawnConfig, WaveState, WizardBoss, PROJECTILE_TIMEOUT, RES_WIDTH,
+   get_sprite, Boss, Debris, Enemy, EnemyKind, EnemyProjectile, GameState, Melee, MyColLayers,
+   Player, Ranged, SpritesCollection, WaveSpawnConfig, WaveState, WizardBoss, PROJECTILE_TIMEOUT,
+   RES_WIDTH,
 };
 use avian2d::prelude::*;
-use bevy::prelude::*;
+use bevy::{
+   log::tracing_subscriber::{fmt::format, Layer},
+   prelude::*,
+};
 use rand::prelude::*;
 
 pub fn setup_waves() {}
@@ -113,11 +117,11 @@ pub fn spawn_slime(
    x: f32,
    y: f32,
 ) {
-   let (name, sprite) = get_sprite(cmd, sprites_collection, "slime");
+   let sprite = get_sprite(cmd, sprites_collection, "slime");
    cmd.spawn((
       EnemyKind::Slime,
       Melee,
-      name,
+      Name::new("Slime Enemy"),
       sprite,
       Enemy { life: 1, speed: 50.0, damage: 1, knockback_resistance: 0.0, xp: 10 },
       Transform::from_xyz(x, y, 0.0),
@@ -134,10 +138,10 @@ pub fn spawn_kobold_archer(
    x: f32,
    y: f32,
 ) {
-   let (name, sprite) = get_sprite(cmd, sprites_collection, "kobold_archer");
+   let sprite = get_sprite(cmd, sprites_collection, "kobold_archer");
    cmd.spawn((
       EnemyKind::KoboldArcher,
-      name,
+      Name::new("Kobold Archer Enemy"),
       sprite,
       Enemy { life: 1, speed: 30.0, damage: 1, knockback_resistance: 0.0, xp: 10 },
       Ranged {
@@ -145,7 +149,8 @@ pub fn spawn_kobold_archer(
          range: 150.0,
          cooldown_timer: Timer::from_seconds(2.0, TimerMode::Once),
          projectile_speed: 50.0,
-         sprite_name: String::from("arrow"),
+         projectile_sprite_name: String::from("arrow"),
+         debris_sprite_name: String::from("broken_arrow"),
       },
       Transform::from_xyz(x, y, 0.0),
       RigidBody::Dynamic,
@@ -201,7 +206,8 @@ pub fn rangers_ai(
                p.translation.x,
                p.translation.y,
                ranged_stats.damage,
-               &ranged_stats.sprite_name,
+               &ranged_stats.projectile_sprite_name,
+               &ranged_stats.debris_sprite_name,
                ranged_stats.projectile_speed,
             );
          }
@@ -224,9 +230,10 @@ pub fn spawn_projectile(
    target_y: f32,
    damage: u32,
    sprite_name: &str,
+   debris_name: &str,
    projectile_speed: f32,
 ) {
-   let (name, sprite) = get_sprite(cmd, sprites_collection, sprite_name);
+   let sprite = get_sprite(cmd, sprites_collection, sprite_name);
    let dir = (Vec2::new(target_x, target_y) - Vec2::new(x, y)).normalize();
    let angle = dir.y.atan2(dir.x);
    let rot = Quat::from_rotation_z(angle - std::f32::consts::FRAC_PI_4);
@@ -234,15 +241,21 @@ pub fn spawn_projectile(
       EnemyProjectile {
          damage,
          speed: projectile_speed,
+         debris_sprite_name: debris_name.to_string(),
          timeout: Timer::from_seconds(PROJECTILE_TIMEOUT, TimerMode::Once),
       },
-      name,
+      Name::new(format!("Projectile {}", sprite_name)),
       sprite,
       Transform::from_xyz(x, y, 0.0).with_rotation(rot),
       RigidBody::Kinematic,
       Friction::new(0.0),
       Collider::circle(3.0),
       LockedAxes::ROTATION_LOCKED,
+      Sensor,
+      CollisionLayers::new(
+         MyColLayers::EnemyProjectile,
+         [MyColLayers::Player, MyColLayers::Doodad],
+      ),
    ));
 }
 
@@ -273,10 +286,10 @@ pub fn timeout_enemy_projectiles(
          let mut rng = rand::thread_rng();
          let random_rotation = rng.gen_range(0.0..std::f32::consts::PI * 2.0);
 
-         let (name, sprite) = get_sprite(&mut cmd, &sprites_collection, "broken_arrow");
+         let sprite = get_sprite(&mut cmd, &sprites_collection, &p.debris_sprite_name);
 
          cmd.spawn((
-            name,
+            Name::new(format!("Debris {}", p.debris_sprite_name)),
             sprite,
             Transform {
                translation: t.translation,
@@ -321,17 +334,18 @@ pub fn spawn_orc_axeman(
    x: f32,
    y: f32,
 ) {
-   let (name, sprite) = get_sprite(cmd, sprites_collection, "orc_axeman");
+   let sprite = get_sprite(cmd, sprites_collection, "orc_axeman");
    cmd.spawn((
       EnemyKind::Slime,
       Melee,
-      name,
+      Name::new("Orc Axeman"),
       sprite,
       Enemy { life: 4, speed: 20.0, damage: 5, knockback_resistance: 0.0, xp: 20 },
       Transform::from_xyz(x, y, 0.0),
       RigidBody::Dynamic,
       Friction::new(0.0),
       Collider::circle(5.0),
+      ColliderDensity(100.0),
       LockedAxes::ROTATION_LOCKED,
    ));
 }
@@ -342,26 +356,34 @@ pub fn spawn_wizard_boss(
    x: f32,
    y: f32,
 ) {
-   let (name, sprite) = get_sprite(cmd, sprites_collection, "wizard_boss");
+   let sprite = get_sprite(cmd, sprites_collection, "wizard_boss");
    cmd.spawn((
+      sprite,
       EnemyKind::WizardBoss,
       Boss,
-      name,
-      sprite,
+      Name::new("Wizard Boss"),
+      Transform::from_xyz(x, y, 0.0),
+      RigidBody::Dynamic,
+      Friction::new(0.0),
+      Collider::circle(8.0),
+      ColliderDensity(100.0),
+      LockedAxes::ROTATION_LOCKED,
       Enemy { life: 100, speed: 20.0, damage: 10, knockback_resistance: 0.0, xp: 100 },
       Ranged {
          damage: 1,
          range: 130.0,
          cooldown_timer: Timer::from_seconds(3.0, TimerMode::Once),
          projectile_speed: 40.0,
-         sprite_name: String::from("wizard_boss_attack"),
+         projectile_sprite_name: String::from("wizard_boss_attack"),
+         debris_sprite_name: String::from("wizard_boss_attack_debris"),
       },
-      Transform::from_xyz(x, y, 0.0),
-      RigidBody::Dynamic,
-      Friction::new(0.0),
-      Collider::circle(8.0),
-      LockedAxes::ROTATION_LOCKED,
-      WizardBoss { ranged_attack_timer: Timer::from_seconds(5.0, TimerMode::Once) },
+      WizardBoss {
+         ranged_attack_timer: Timer::from_seconds(5.0, TimerMode::Once),
+
+         projectile_sprite_name: String::from("wizard_boss_attack"),
+         debris_sprite_name: String::from("wizard_boss_attack_debris"),
+         projectile_speed: 100.0,
+      },
    ));
 }
 
@@ -396,7 +418,6 @@ pub fn ranged_boss_attack(
                for i in 0..num_projectiles {
                   let angle = start_angle + i as f32 * spread_angle / (num_projectiles - 1) as f32;
                   let dir = Vec2::new(angle.cos(), angle.sin());
-                  let projectile_speed = 100.0;
 
                   // Spawn the projectile
                   spawn_projectile(
@@ -407,8 +428,9 @@ pub fn ranged_boss_attack(
                      transform.translation.x + dir.x,
                      transform.translation.y + dir.y,
                      5,
-                     "wizard_boss_attack",
-                     projectile_speed,
+                     &boss.projectile_sprite_name,
+                     &boss.debris_sprite_name,
+                     boss.projectile_speed,
                   );
                }
             }

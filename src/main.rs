@@ -1,11 +1,61 @@
 #![allow(unused)]
+use avian2d::prelude::*;
+use bevy::{
+   app::AppExit,
+   asset::LoadState,
+   input::keyboard::KeyboardInput,
+   prelude::*,
+   render::{
+      camera::ScalingMode,
+      diagnostic::RenderDiagnosticsPlugin,
+      mesh::{self, PrimitiveTopology},
+      render_resource::{Extent3d, TextureDescriptor, TextureUsages},
+      view::RenderLayers,
+   },
+   utils::{info, tracing::field::debug},
+   window::{WindowResized, WindowResolution},
+};
+use bevy_asset_loader::prelude::*;
+use bevy_ecs_tilemap::prelude::*;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use leafwing_input_manager::prelude::*;
+use std::iter::zip;
+
+mod animations;
+mod attacks;
+mod components;
+mod doodads;
+mod leveling;
+mod loot;
+mod menu;
+mod pickups;
+mod player;
+mod postprocessing;
+mod save_load;
+mod sprites;
+mod ui;
+mod waves;
+
+mod resources;
+use resources::*;
+
+use animations::*;
+use attacks::*;
+use doodads::*;
+use leveling::*;
+use menu::*;
+use pickups::*;
+use player::*;
+use postprocessing::*;
+use save_load::*;
+use sprites::*;
+use ui::*;
+use waves::*;
+
 const RES_WIDTH: u32 = 640;
 const RES_HEIGHT: u32 = 360;
 const PIXEL_PERFECT_LAYERS: RenderLayers = RenderLayers::layer(0);
 const HIGH_RES_LAYERS: RenderLayers = RenderLayers::layer(1);
-
-// TODO:
-// 1. Finish the GAME
 
 // == STATES ==
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
@@ -18,6 +68,19 @@ enum GameState {
    LevelUp,
    GameOver,
 }
+
+#[derive(PhysicsLayer, Default)]
+enum MyColLayers {
+   #[default]
+   Default,
+   Player,
+   PlayerProjectile,
+   Enemy,
+   EnemyProjectile,
+   Doodad,
+}
+
+// TODO: LAYUEARERAS
 
 fn main() {
    let mut app = App::new();
@@ -57,10 +120,10 @@ fn main() {
       PlayerPlugin,
       MenuPlugin,
       DoodadPlugin,
-      // SaveLoadPlugin,
       PostProcessPlugin,
       LoadSpritesPlugin,
       InGameUiPlugin,
+      // SaveLoadPlugin,
       // TerrainPlugin,
    ));
 
@@ -193,60 +256,3 @@ fn setup_physics(mut commands: Commands) {
 // ) {
 //     ass.get_load_state(id);
 // }
-
-use avian2d::prelude::*;
-use bevy::{
-   app::AppExit,
-   asset::LoadState,
-   input::keyboard::KeyboardInput,
-   prelude::*,
-   render::{
-      camera::ScalingMode,
-      diagnostic::RenderDiagnosticsPlugin,
-      mesh::{self, PrimitiveTopology},
-      render_resource::{Extent3d, TextureDescriptor, TextureUsages},
-      view::RenderLayers,
-   },
-   utils::{info, tracing::field::debug},
-   window::{WindowResized, WindowResolution},
-};
-use bevy_asset_loader::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use leafwing_input_manager::prelude::*;
-use save_load::SaveLoadPlugin;
-use std::iter::zip;
-use terrain::TerrainPlugin;
-
-mod animations;
-mod attacks;
-mod components;
-mod doodads;
-mod leveling;
-mod loot;
-mod menu;
-mod pickups;
-mod player;
-mod postprocessing;
-mod resources; // Art n shit
-mod save_load;
-mod sprites;
-mod terrain;
-mod ui;
-mod waves;
-
-use animations::*;
-use attacks::*;
-use doodads::*;
-use leveling::*;
-use menu::*;
-use pickups::*;
-use player::*;
-use postprocessing::*;
-use resources::*;
-use sprites::*;
-use ui::*;
-use waves::*;
-
-// mod systems;
-// use systems::*;

@@ -1,6 +1,6 @@
 use crate::{
-   get_sprite, player::components::*, Action, AttackTimer, Enemy, EnemyKind, GameState,
-   PlayerMoveEvent, Projectile, ProjectileArt, SpritesCollection, TestAttack,
+   get_sprite, Action, AttackTimer, DaggerAttack, Enemy, EnemyKind, GameState, PlayerMoveEvent,
+   ProjectileArt, SpritesCollection,
 };
 use avian2d::prelude::*;
 use bevy::{ecs::bundle, prelude::*};
@@ -52,9 +52,9 @@ fn spawn_exp_orb(
    sprites_collection: &Res<SpritesCollection>,
 ) {
    for e in er.read() {
-      let (name, sprite) = get_sprite(&mut cmd, &sprites_collection, "crystal");
+      let sprite = get_sprite(&mut cmd, &sprites_collection, "crystal");
       cmd.spawn((
-         name,
+         Name::new("Exp Orb"),
          sprite,
          Transform::from_xyz(e.x, e.y, 0.0),
          RigidBody::Dynamic,

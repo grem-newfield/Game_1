@@ -12,5 +12,3 @@ pub struct Canvas;
 pub struct CanvasCamera;
 #[derive(Component)]
 pub struct MainCamera;
-#[derive(Component)]
-pub struct CursorTag;

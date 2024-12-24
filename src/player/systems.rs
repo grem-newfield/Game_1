@@ -1,6 +1,6 @@
 use crate::{
-   get_sprite, player::components::*, Action, AttackTimer, Enemy, EnemyProjectile, Health,
-   PlayerMoveEvent, PowerUp, Projectile, ProjectileArt, SpritesCollection, TestAttack, XpOrb,
+   get_sprite, player::components::*, Action, AttackTimer, DaggerAttack, Enemy, EnemyProjectile,
+   Health, PlayerMoveEvent, PowerUp, ProjectileArt, SpritesCollection, XpOrb,
 };
 use avian2d::prelude::*;
 use bevy::{ecs::bundle, prelude::*};
@@ -102,10 +102,10 @@ pub fn setup_player(
       (Action::Down, KeyCode::ArrowDown),
    ]);
 
-   let (sprite, name) = get_sprite(&mut cmd, &sprites, "player");
+   let sprite = get_sprite(&mut cmd, &sprites, "player");
    cmd.spawn((
       sprite,
-      name,
+      Name::new("Player"),
       Player {
          life: 100,
          speed: 80.0,
@@ -142,6 +142,7 @@ pub fn follow_cam(
       canvas.translation = target.translation;
       pixel_cam.translation = target.translation;
    }
+   // TODO: reenable smooth / remake smooth
    return;
 
    let smooth_time = 0.3; // This controls how quickly the camera reaches the target. Lower values make it faster.
@@ -179,33 +180,6 @@ fn smooth_damp(
    target + (change + temp) * exp
 }
 
-pub fn setup_cursor(
-   mut commands: Commands,
-   sprites_collection: Res<SpritesCollection>,
-) {
-   let (sprite, name) = get_sprite(&mut commands, &sprites_collection, "cursor");
-   commands.spawn((sprite, name, Transform::from_xyz(0.0, 0.0, 100.0), CursorTag));
-}
-
-pub fn draw_cursor(
-   mut cmd: Commands,
-   window: Single<&Window>,
-   q: Single<(&Camera, &GlobalTransform), With<MainCamera>>,
-   mut cursor_sprite: Single<&mut Transform, With<CursorTag>>,
-) {
-   let (camera, camera_transform) = *q;
-   let Some(cur_pos) = window.cursor_position() else {
-      return;
-   };
-   let Ok(point) = camera.viewport_to_world_2d(camera_transform, cur_pos) else {
-      return;
-   };
-   cursor_sprite.translation = Vec3::new(point.x, point.y, 100.0);
-
-   // if let Some(cur_pos) = window.cursor_position()
-   // .and_then(|cursor| cam.viewport_to_world_2d(cam_trans,cursor)).map(|ray| ray.);
-}
-
 // pub fn handle_player_collisions(q: Query<(Entity, &CollidingEntities), With<Player>>) {
 //    for (e, colliding_e) in &q {
 //       info!("{} colliding with: {:?}", e, colliding_e);
@@ -223,7 +197,15 @@ pub fn handle_player_collisions(
    health_query: Query<&Health>,
    powerup_query: Query<&PowerUp>,
    xporb_query: Query<&XpOrb>,
+   mut collision_event_reader: EventReader<CollisionStarted>,
 ) {
+   for CollisionStarted(e1, e2) in collision_event_reader.read() {
+      info!("entities {} and {} collided 🦍", e1, e2);
+   }
+   return;
+
+   // TODO: Finish this monstrocity
+
    for (player_entity, colliding_entities) in query.iter_mut() {
       for &colliding_entity in &colliding_entities.0 {
          if let Ok(_) = enemy_query.get(colliding_entity) {
@@ -258,3 +240,26 @@ pub fn handle_player_collisions(
 }
 
 fn check_level_up() {}
+
+#[derive(Event)]
+pub struct PlayerMovedFarEnough;
+
+pub fn emit_player_moved_far_enough(
+   // mut cmd: Commands,
+   // sprites_collection: Res<SpritesCollection>,
+   mut player: Single<&mut Player>,
+   player_t: Single<&Transform, With<Player>>,
+   // window: Single<&Window>,
+   mut ew: EventWriter<PlayerMovedFarEnough>,
+) {
+   let cur_pos = player_t.translation;
+   // info!("curpos {}", cur_pos);
+   let distance_moved = player.last_position.distance(cur_pos);
+   if distance_moved > 100.0 {
+      ew.send(PlayerMovedFarEnough);
+      // info!("moved 10.0, doodadding");
+      // player.last_position = cur_pos;
+      // add_grass_cluster_out_of_sprites(&mut cmd, &sprites_collection, cur_pos, window);
+      // add_points_of_interest(&mut cmd, &sprites_collection, cur_pos);
+   }
+}

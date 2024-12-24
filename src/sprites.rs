@@ -127,14 +127,11 @@ pub fn get_sprite(
    commands: &mut Commands,
    sprites_collection: &Res<SpritesCollection>,
    sprite_name: &str,
-) -> (Sprite, Name) {
+) -> Sprite {
    if let Some(cursor_image_handle) =
       sprites_collection.map.get(&format!("sprites/{}.png", sprite_name))
    {
-      return (
-         Sprite::from_image(cursor_image_handle.clone()),
-         Name::new(format!("{} Sprite", sprite_name)),
-      );
+      return Sprite::from_image(cursor_image_handle.clone());
    } else {
       error!("missing {}.png", sprite_name);
       error!("sprites.iter -> ");
@@ -142,6 +139,6 @@ pub fn get_sprite(
          info!("{:?}", i);
       }
       info!("tried to get: {}", format!("sprites/{}", sprite_name));
-      return (Sprite::default(), Name::new("Missing Sprite"));
+      return Sprite::default();
    }
 }

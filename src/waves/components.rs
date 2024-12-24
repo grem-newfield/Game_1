@@ -15,6 +15,9 @@ pub enum EnemyKind {
 #[derive(Component, Clone)]
 pub struct WizardBoss {
    pub ranged_attack_timer: Timer,
+   pub projectile_speed: f32,
+   pub projectile_sprite_name: String,
+   pub debris_sprite_name: String,
 }
 
 #[derive(Component, Clone)]
@@ -35,7 +38,8 @@ pub struct Ranged {
    pub range: f32,
    pub cooldown_timer: Timer,
    pub projectile_speed: f32,
-   pub sprite_name: String,
+   pub projectile_sprite_name: String,
+   pub debris_sprite_name: String,
 }
 
 #[derive(Component, Clone)]
@@ -46,6 +50,7 @@ pub struct EnemyProjectile {
    pub damage: u32,
    pub speed: f32,
    pub timeout: Timer,
+   pub debris_sprite_name: String,
 }
 
 #[derive(Component, Clone)]
