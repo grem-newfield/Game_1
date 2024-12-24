@@ -1,2 +1,2 @@
-use crate::{Health, Player, PlayerState, PowerUp, SpritesCollection, XpOrb};
+use crate::{Health, Player, PowerUp, SpritesCollection, XpOrb};
 use bevy::prelude::*;

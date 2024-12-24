@@ -23,6 +23,14 @@ pub struct WizardBoss {
 #[derive(Component, Clone)]
 pub struct Boss;
 
+//  NOTE: maybe redo to have separate components
+// #[derive(Component, Clone)]
+// pub struct Life(f32);
+// #[derive(Component, Clone)]
+// pub struct Speed(f32);
+// #[derive(Component, Clone)]
+// pub struct Damage(u32);
+
 #[derive(Component, Clone)]
 pub struct Enemy {
    pub life: u32,

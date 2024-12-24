@@ -7,8 +7,15 @@ pub use components::*;
 pub use resources::*;
 pub use systems::*;
 
-pub mod dagger_a;
-pub use dagger_a::*;
+// NOTE: Possible attacks:
+// Whip
+// TestDagger intp Wand
+//
+
+pub mod dagger_attack;
+pub use dagger_attack::*;
+pub mod wasp_attack;
+pub use wasp_attack::*;
 
 use bevy::prelude::*;
 

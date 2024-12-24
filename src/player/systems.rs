@@ -1,6 +1,7 @@
 use crate::{
    get_sprite, player::components::*, Action, AttackTimer, DaggerAttack, Enemy, EnemyProjectile,
-   Health, PlayerMoveEvent, PowerUp, ProjectileArt, SpritesCollection, XpOrb,
+   GamePaused, GameState, GameUnPaused, Health, PlayerMoveEvent, PlayerMovedFarEnough, PowerUp,
+   ProjectileArt, SpritesCollection, XpOrb,
 };
 use avian2d::prelude::*;
 use bevy::{ecs::bundle, prelude::*};
@@ -26,6 +27,28 @@ pub fn player_moves(
    };
 }
 
+pub fn toggle_pause_ingame(
+   mut paused: EventWriter<GamePaused>,
+   mut unpaused: EventWriter<GameUnPaused>,
+   action_state: Single<&ActionState<Action>, With<Player>>,
+   state: Res<State<GameState>>,
+   mut next_state: ResMut<NextState<GameState>>,
+) {
+   if action_state.just_pressed(&Action::Pause) {
+      match state.get() {
+         GameState::InGame => {
+            paused.send(GamePaused);
+            next_state.set(GameState::Paused);
+         }
+         GameState::Paused => {
+            unpaused.send(GameUnPaused);
+            next_state.set(GameState::InGame);
+         }
+         _ => {}
+      }
+   }
+}
+
 pub fn move_player(
    mut e_move: EventReader<PlayerMoveEvent>,
    time: Res<Time>,
@@ -38,49 +61,6 @@ pub fn move_player(
    }
 }
 
-pub fn player_move_old(
-   time: Res<Time>,
-   keys: Res<ButtonInput<KeyCode>>,
-   // mut q: Query<&mut Transform, With<Player>>,
-   // mut p: Query<&Player>,
-   mut player_transform: Single<&mut Transform, With<Player>>,
-   mut player: Single<&Player>,
-   mut exit_event_writer: EventWriter<AppExit>,
-) {
-   // for mut velocity in &mut query {
-   //         velocity.y -= 9.8 * DELTA;
-   //
-   // for (mut transform, player) in zip(&mut q, &p) {
-   // for (mut transform, player) in zip(&mut q, &p) {
-   // info!("{:?}", transform);
-   // info!("{:?}", player);
-   let mut move_vec = Vec3::ZERO;
-   if keys.pressed(KeyCode::KeyQ) {
-      exit_event_writer.send(AppExit::Success);
-   }
-   if keys.pressed(KeyCode::KeyW) {
-      // transform.translation.y += player.speed * time.delta_seconds();
-      move_vec.y += 1.0; // player.speed * time.delta_secs();
-   }
-   if keys.pressed(KeyCode::KeyA) {
-      // transform.translation.x -= player.speed * time.delta_seconds();
-      move_vec.x -= 1.0; //player.speed * time.delta_secs();
-                         // transform.rotate_z(time.delta_secs() * 3.);
-   }
-   if keys.pressed(KeyCode::KeyS) {
-      // transform.translation.y -= player.speed * time.delta_seconds();
-      move_vec.y -= 1.0; //player.speed * time.delta_secs();
-   }
-   if keys.pressed(KeyCode::KeyD) {
-      // transform.translation.x += player.speed * time.delta_seconds();
-      move_vec.x += 1.0; //player.speed * time.delta_secs();
-                         // transform.rotate_z(-time.delta_secs() * 3.);
-   }
-   if move_vec != Vec3::ZERO {
-      player_transform.translation += move_vec.normalize() * player.speed * time.delta_secs();
-   }
-   // }
-}
 pub fn setup_player(
    mut cmd: Commands,
    asset_server: Res<AssetServer>,
@@ -100,6 +80,8 @@ pub fn setup_player(
       (Action::Up, KeyCode::ArrowUp),
       (Action::Down, KeyCode::KeyS),
       (Action::Down, KeyCode::ArrowDown),
+      (Action::Pause, KeyCode::Escape),
+      (Action::Pause, KeyCode::Space),
    ]);
 
    let sprite = get_sprite(&mut cmd, &sprites, "player");
@@ -111,6 +93,8 @@ pub fn setup_player(
          speed: 80.0,
          last_position: Vec3::ZERO,
          damage_cooldown: Timer::from_seconds(1.0, TimerMode::Once),
+         level: 0,
+         experience: 0.0,
       },
       // Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
       Transform::from_xyz(0., 0., 99.),
@@ -239,10 +223,13 @@ pub fn handle_player_collisions(
    }
 }
 
-fn check_level_up() {}
-
-#[derive(Event)]
-pub struct PlayerMovedFarEnough;
+pub fn check_level_up(mut player: Single<&mut Player>) {
+   if player.experience >= 100.0 {
+      player.experience -= 100.0;
+      player.level += 1;
+      // TODO: summon screen here with weapon update
+   }
+}
 
 pub fn emit_player_moved_far_enough(
    // mut cmd: Commands,

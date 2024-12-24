@@ -84,6 +84,8 @@ pub fn wave_system(
 
 // pub fn despawn_mobs_far_away() {}
 
+pub fn despawn_dead_enemies_emit_enemy_killed() {}
+
 pub fn get_random_location_around_player(t: &Transform) -> (f32, f32) {
    // TODO: set proper radius
    let radius = (RES_WIDTH) as f32 * 0.7;

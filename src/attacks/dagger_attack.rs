@@ -50,7 +50,7 @@ pub struct DaggerAttackBundle {
 impl Default for DaggerAttackBundle {
    fn default() -> Self {
       DaggerAttackBundle {
-         attack_timer: AttackTimer { timer: Timer::from_seconds(0.2, TimerMode::Once) },
+         attack_timer: AttackTimer { timer: Timer::from_seconds(0.6, TimerMode::Once) },
          dagger_attack: DaggerAttack,
          dagger_attack_projectile: DaggerAttackProjectile::default(),
       }

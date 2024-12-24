@@ -5,6 +5,8 @@ pub struct Player {
    pub speed: f32,
    pub last_position: Vec3,
    pub damage_cooldown: Timer,
+   pub experience: f32,
+   pub level: u32,
 }
 #[derive(Component)]
 pub struct Canvas;

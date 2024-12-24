@@ -60,7 +60,7 @@ fn draw_fps(
    for mut span in &mut query {
       if let Some(fps) = diagnostics.get(&FrameTimeDiagnosticsPlugin::FPS) {
          if let Some(fps) = fps.smoothed() {
-            **span = format!("{fps:.2}");
+            **span = format!("{fps:.0}");
          }
       }
    }

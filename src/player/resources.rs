@@ -1,21 +1,13 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 
-#[derive(Resource)]
-pub struct PlayerState {
-   pub pickup_range: f32,
-   xp: f32,
-   level: u32,
-   kills: u32,
-}
-
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 pub enum Action {
    Up,
    Down,
    Left,
    Right,
-   // Pause, // TODO: maybe add pause for menu in game pause ?
+   Pause, // TODO: maybe add pause for menu in game pause ?
 }
 
 impl Action {
@@ -35,3 +27,12 @@ impl Action {
 pub struct PlayerMoveEvent {
    pub direction: Dir2,
 }
+
+#[derive(Event)]
+pub struct GamePaused;
+
+#[derive(Event)]
+pub struct GameUnPaused;
+
+#[derive(Event)]
+pub struct PlayerMovedFarEnough;
