@@ -20,6 +20,7 @@ impl Plugin for WavesPlugin {
       &self,
       app: &mut App,
    ) {
+      app.add_event::<EnemyDied>();
       app.add_systems(OnEnter(GameState::InGame), (setup_waves)).add_systems(
          FixedUpdate,
          (
@@ -31,24 +32,27 @@ impl Plugin for WavesPlugin {
             wave_system,
             timeout_enemy_projectiles,
             ranged_boss_attack,
+            enemy_take_dmg_system,
+            tick_hit_cooldowns,
+            enemy_despawn_and_emit_enemydied,
          )
             .run_if(in_state(GameState::InGame)),
       );
       app.insert_resource(WaveSpawnConfig::default()).insert_resource(WaveState::default());
    }
 }
-pub fn spawn_test_enemies(
-   mut cmd: Commands,
-   sprites_collection: Res<SpritesCollection>,
-) {
-   let mut rng = rand::thread_rng();
-   for _ in 0..200 {
-      let x = rng.gen_range(-1000..1000) as f32;
-      let y = rng.gen_range(-1000..1000) as f32;
-      if rng.gen_bool(0.75) {
-         spawn_slime(&mut cmd, &sprites_collection, x, y);
-      } else {
-         spawn_kobold_archer(&mut cmd, &sprites_collection, x, y);
-      }
-   }
-}
+// pub fn spawn_test_enemies(
+//    mut cmd: Commands,
+//    sprites_collection: Res<SpritesCollection>,
+// ) {
+//    let mut rng = rand::thread_rng();
+//    for _ in 0..200 {
+//       let x = rng.gen_range(-1000..1000) as f32;
+//       let y = rng.gen_range(-1000..1000) as f32;
+//       if rng.gen_bool(0.75) {
+//          spawn_slime(&mut cmd, &sprites_collection, x, y);
+//       } else {
+//          spawn_kobold_archer(&mut cmd, &sprites_collection, x, y);
+//       }
+//    }
+// }

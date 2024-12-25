@@ -33,16 +33,16 @@ pub struct Boss;
 
 #[derive(Component, Clone)]
 pub struct Enemy {
-   pub life: u32,
+   pub health: i32,
    pub speed: f32,
-   pub damage: u32,
+   pub damage: i32,
    pub knockback_resistance: f32,
    pub xp: u32,
 }
 
 #[derive(Component, Clone)]
 pub struct Ranged {
-   pub damage: u32,
+   pub damage: i32,
    pub range: f32,
    pub cooldown_timer: Timer,
    pub projectile_speed: f32,
@@ -55,7 +55,7 @@ pub struct Melee;
 
 #[derive(Component, Clone)]
 pub struct EnemyProjectile {
-   pub damage: u32,
+   pub damage: i32,
    pub speed: f32,
    pub timeout: Timer,
    pub debris_sprite_name: String,
@@ -64,4 +64,25 @@ pub struct EnemyProjectile {
 #[derive(Component, Clone)]
 pub struct Debris {
    pub timeout: Timer,
+}
+
+#[derive(Component)]
+pub struct HitCooldowns {
+   pub dagger_cooldown: Timer,
+   pub book_cooldown: Timer,
+}
+
+impl Default for HitCooldowns {
+   fn default() -> Self {
+      HitCooldowns {
+         dagger_cooldown: Timer::from_seconds(0.3, TimerMode::Once),
+         book_cooldown: Timer::from_seconds(0.3, TimerMode::Once),
+      }
+   }
+}
+#[derive(Event)]
+pub struct EnemyDied {
+   pub enemy_kind: EnemyKind,
+   pub x: f32,
+   pub y: f32,
 }

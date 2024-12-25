@@ -1,7 +1,7 @@
 use crate::{
    get_sprite, player::components::*, Action, AttackTimer, DaggerAttack, Enemy, EnemyProjectile,
-   GamePaused, GameState, GameUnPaused, Health, PlayerMoveEvent, PlayerMovedFarEnough, PowerUp,
-   ProjectileArt, SpritesCollection, XpOrb,
+   GamePaused, GameState, GameUnPaused, Health, MyCollisionLayers, PlayerMoveEvent,
+   PlayerMovedFarEnough, PowerUp, ProjectileArt, SpritesCollection, XpOrb,
 };
 use avian2d::prelude::*;
 use bevy::{ecs::bundle, prelude::*};
@@ -95,13 +95,24 @@ pub fn setup_player(
          damage_cooldown: Timer::from_seconds(1.0, TimerMode::Once),
          level: 0,
          experience: 0.0,
+         kills: 0,
       },
       // Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
       Transform::from_xyz(0., 0., 99.),
       InputManagerBundle::with_map(input_map),
       RigidBody::Kinematic,
       Collider::circle(4.0),
-      CollidingEntities::default(),
+      // CollidingEntities::default(),
+      CollisionLayers::new(
+         MyCollisionLayers::Player,
+         [
+            MyCollisionLayers::Enemy,
+            MyCollisionLayers::EnemyProjectile,
+            MyCollisionLayers::Doodad,
+            MyCollisionLayers::XpOrb,
+            MyCollisionLayers::PowerUp,
+         ],
+      ),
    ));
 }
 pub fn follow_cam(
@@ -183,10 +194,10 @@ pub fn handle_player_collisions(
    xporb_query: Query<&XpOrb>,
    mut collision_event_reader: EventReader<CollisionStarted>,
 ) {
+   return;
    for CollisionStarted(e1, e2) in collision_event_reader.read() {
       info!("entities {} and {} collided 🦍", e1, e2);
    }
-   return;
 
    // TODO: Finish this monstrocity
 

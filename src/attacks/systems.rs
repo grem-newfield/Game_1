@@ -1,5 +1,6 @@
 use crate::{
-   get_sprite, AttackTimer, Boss, DaggerAttack, Debris, Enemy, Player, SpritesCollection,
+   get_sprite, AttackTimer, Boss, DaggerAttack, DaggerAttackConf, DaggerAttackProjectile, Debris,
+   Enemy, Player, SpritesCollection,
 };
 use avian2d::prelude::*;
 use bevy::prelude::*;
@@ -18,7 +19,7 @@ pub fn tick_attack_timers(
 // (AttackTimer, SomeAttackName2)
 // (AttackTimer, SomeAttackName3)
 
-pub fn attacks_system() {}
+// pub fn attacks_system() {}
 
 #[derive(Resource, Default, Debug)]
 pub struct ClosestEnemy {
@@ -108,7 +109,8 @@ pub fn weapons_system(
 // pub fn move_player_projectiles(
 //    mut c: Commands,
 //    time: Res<Time>,
-//    mut q: Query<(Entity, &mut Transform, &PlayerSimpleProjectile)>,
+//    mut q: Query<(&mut Transform, &PlayerSimpleProjectile)>,
+//    // mut q: Query<(&mut Transform)>,
 // ) {
 //    for (e, mut transform, projectile) in q.iter_mut() {
 //       // move into direction of rotation

@@ -1,6 +1,6 @@
 use crate::{
-   get_sprite, Action, AttackTimer, DaggerAttack, Enemy, EnemyKind, GameState, PlayerMoveEvent,
-   ProjectileArt, SpritesCollection,
+   get_sprite, Action, AttackTimer, DaggerAttack, Enemy, EnemyDied, EnemyKind, GameState,
+   PlayerMoveEvent, ProjectileArt, SpritesCollection,
 };
 use avian2d::prelude::*;
 use bevy::{ecs::bundle, prelude::*};
@@ -13,38 +13,11 @@ impl Plugin for EnemyLootPlugin {
       &self,
       app: &mut App,
    ) {
-      app.add_event::<EnemyDied>();
-      app.add_systems(
-         FixedUpdate,
-         (enemy_despawn_and_emit_enemydied).run_if(in_state(GameState::InGame)),
-      );
+      app.add_systems(FixedUpdate, (dummy).run_if(in_state(GameState::InGame)));
       // .add_systems(FixedUpdate, (fit_canvas_to_window,));
    }
 }
-
-#[derive(Event)]
-pub struct EnemyDied {
-   enemy_kind: EnemyKind,
-   x: f32,
-   y: f32,
-}
-
-pub fn enemy_despawn_and_emit_enemydied(
-   mut cmd: Commands,
-   mut ev_enemy_died: EventWriter<EnemyDied>,
-   q: Query<(Entity, &EnemyKind, &Enemy, &Transform)>,
-) {
-   for (e, kind, stats, t) in q.iter() {
-      if stats.life <= 0 {
-         ev_enemy_died.send(EnemyDied {
-            enemy_kind: *kind,
-            x: t.translation.x,
-            y: t.translation.y,
-         });
-         cmd.entity(e).despawn();
-      }
-   }
-}
+fn dummy() {}
 
 fn spawn_exp_orb(
    mut cmd: Commands,

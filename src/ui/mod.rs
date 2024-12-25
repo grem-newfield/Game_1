@@ -7,7 +7,9 @@
 // pub use resources::*;
 // pub use systems::*;
 
-use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, prelude::*, time::Stopwatch};
+use bevy::{
+   color::palettes::css::GOLD, diagnostic::FrameTimeDiagnosticsPlugin, prelude::*, time::Stopwatch,
+};
 
 use crate::{get_sprite, move_player, GameState, MainCamera, Player, SpritesCollection};
 
@@ -20,14 +22,16 @@ impl Plugin for InGameUiPlugin {
       &self,
       app: &mut App,
    ) {
-      app.add_plugins(FrameTimeDiagnosticsPlugin);
-      app.add_systems(Startup, (setup_fps_ui,)); // setup_ui));
-                                                 //setup_cursor
-      app.add_systems(FixedUpdate, (draw_fps));
-      app.add_systems(FixedUpdate, (tick_game_timer).run_if(in_state(GameState::InGame)));
+      // app.add_plugins(FrameTimeDiagnosticsPlugin);
+      // app.add_systems(Startup, (setup_fps_ui));
+      // app.add_systems(FixedUpdate, (draw_fps));
+      app.add_systems(OnEnter(GameState::InGame), (setup_hud));
+      app.add_systems(
+         FixedUpdate,
+         (tick_game_timer, update_timer, update_xpbar, update_kills, update_level)
+            .run_if(in_state(GameState::InGame)),
+      );
       app.insert_resource(GameTimer::default());
-
-      // app.add_systems(FixedUpdate, (move_cursor));
    }
 }
 
@@ -37,18 +41,19 @@ fn setup_fps_ui(
 ) {
    let root = cmd
       .spawn((
+         Node { align_items: AlignItems::End, ..default() },
          Text::new("FPS: "),
-         TextFont { font: ass.load("fonts/PPMondwest-Regular.otf"), font_size: 20.0, ..default() },
+         TextFont { font: ass.load("fonts/PPMondwest-Regular.otf"), font_size: 30.0, ..default() },
       ))
       .with_child((
          TextSpan::default(),
          (
             TextFont {
                font: ass.load("fonts/PPMondwest-Regular.otf"),
-               font_size: 20.0,
+               font_size: 30.0,
                ..default()
             },
-            TextColor(bevy::color::palettes::css::GOLD.into()),
+            TextColor(GOLD.into()),
          ),
          FpsText,
       ));
@@ -94,45 +99,102 @@ fn tick_game_timer(
    t.timer.tick(time.delta());
 }
 
-// fn setup_ui(
-//    mut cmd: Commands,
-//    ass: Res<AssetServer>,
-//    game_timer: Res<GameTimer>,
-//    p: Single<&Player>,
-//    // game_state: Res<GameState>,
-// ) {
-//    let font_handle = ass.load("fonts/PPMondwest-Regular.otf");
-//
-//    // Timer Text
-//    cmd.spawn((
-//       Text::new(
-//          format!("Time: {:.2} min", game_timer.timer.elapsed_secs() / 60.0),
-//          // TextStyle { font: font_handle.clone(), font_size: 33.0, color: Color::WHITE },
-//       ),
-//       TimerText,
-//    ));
-//
-//    // XP Bar and Level Text
-//    cmd.spawn((
-//       (
-//          Text::new(format!("XP: {:.2} | Level: {}", p.xp, p.level)),
-//          // TextStyle { font: font_handle.clone(), font_size: 33.0, color: Color::WHITE },
-//       ),
-//       XpBarText,
-//       LevelText,
-//    ));
-//
-//    // Kills Text
-//    cmd.spawn_bundle(TextBundle {
-//       text: Text::from_section(
-//          format!("Kills: {}", game_state.kills),
-//          TextStyle { font: font_handle, font_size: 33.0, color: Color::WHITE },
-//       ),
-//       ..Default::default()
-//    })
-//    .insert(KillsText);
-// }
-//
+fn setup_hud(
+   mut cmd: Commands,
+   ass: Res<AssetServer>,
+   game_timer: Res<GameTimer>,
+) {
+   let font_handle = ass.load("fonts/PPMondwest-Regular.otf");
+
+   let timer_text = (
+      Text::new("Time: mm.ss"),
+      TimerText,
+      (
+         TextFont { font: font_handle.clone(), font_size: 30.0, ..default() },
+         TextColor(GOLD.into()),
+      ),
+   );
+   let xpbar_text = (
+      Text::new("XP: 0000"),
+      XpBarText,
+      (
+         TextFont { font: font_handle.clone(), font_size: 30.0, ..default() },
+         TextColor(GOLD.into()),
+      ),
+   );
+   let level_text = (
+      Text::new("Level 0"),
+      LevelText,
+      (
+         TextFont { font: font_handle.clone(), font_size: 30.0, ..default() },
+         TextColor(GOLD.into()),
+      ),
+   );
+   let kills_text = (
+      Text::new("Kills: 0"),
+      KillsText,
+      (
+         TextFont { font: font_handle.clone(), font_size: 30.0, ..default() },
+         TextColor(GOLD.into()),
+      ),
+   );
+
+   let mut top_bar = cmd
+      .spawn((
+         Node {
+            width: Val::Percent(100.),
+            height: Val::Percent(100.),
+            justify_items: JustifyItems::Center,
+            flex_direction: FlexDirection::Column,
+            position_type: PositionType::Relative,
+            ..default()
+         },
+         // BackgroundColor(Color::WHITE),
+      ))
+      .with_children(|parent| {
+         parent.spawn(timer_text);
+         parent.spawn(xpbar_text);
+         parent.spawn(level_text);
+         parent.spawn(kills_text);
+      })
+      .id();
+   info!("spawned: {:?}", top_bar)
+}
+
+fn update_timer(
+   game_timer: Res<GameTimer>,
+   player: Single<&Player>,
+   mut timer_t: Single<&mut Text, With<TimerText>>,
+) {
+   let mut ss = game_timer.timer.elapsed_secs();
+   let mm = (ss / 60.0).floor();
+   ss = ss % 60.0;
+   timer_t.0 = format!("Time: {:02}:{:02}", mm as u32, ss as u32);
+}
+fn update_xpbar(
+   game_timer: Res<GameTimer>,
+   player: Single<&Player>,
+   mut xpbar_t: Single<&mut Text, With<XpBarText>>,
+) {
+   xpbar_t.0 = format!("XP: {:.0}", player.experience);
+}
+
+fn update_level(
+   game_timer: Res<GameTimer>,
+   player: Single<&Player>,
+   mut level_t: Single<&mut Text, With<LevelText>>,
+) {
+   level_t.0 = format!("Level: {}", player.level);
+}
+
+fn update_kills(
+   game_timer: Res<GameTimer>,
+   player: Single<&Player>,
+   mut kills_t: Single<&mut Text, With<KillsText>>,
+) {
+   kills_t.0 = format!("Kills: {}", player.kills);
+}
+
 // #[derive(Component)]
 // pub struct CursorTag;
 

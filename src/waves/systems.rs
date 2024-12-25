@@ -1,9 +1,11 @@
+use core::panic;
 use std::f32::consts::PI;
 
 use crate::{
-   get_sprite, Boss, Debris, Enemy, EnemyKind, EnemyProjectile, GameState, Melee, MyColLayers,
-   Player, Ranged, SpritesCollection, WaveSpawnConfig, WaveState, WizardBoss, PROJECTILE_TIMEOUT,
-   RES_WIDTH,
+   get_sprite, Boss, DaggerAttackProjectile, Debris, Enemy, EnemyDied, EnemyKind, EnemyProjectile,
+   GameState, HitCooldowns, Melee, MyCollisionLayers, Player, PlayerProjectile, Ranged,
+   SpritesCollection, WaspAttackProjectile, WaveSpawnConfig, WaveState, WizardBoss,
+   PROJECTILE_TIMEOUT, RES_WIDTH,
 };
 use avian2d::prelude::*;
 use bevy::{
@@ -39,14 +41,14 @@ pub fn wave_system(
    if wsc.wave_difficulty_timer.finished() {
       state.difficulty += 1;
       wsc.wave_difficulty_timer.reset();
-      info!("Wave difficulty increased to {}", state.difficulty);
+      // info!("Wave difficulty increased to {}", state.difficulty);
    }
    // BOSS
    if wsc.boss_spawn_timer.just_finished() {
       let (x, y) = get_random_location_around_player(&player_transform);
       spawn_wizard_boss(&mut cmd, &sprites_collection, x, y);
       wsc.boss_spawn_timer.reset();
-      info!("Boss spawned");
+      // info!("Boss spawned");
    }
    // MOB
    if wsc.spawn_timer.just_finished() && state.mob_count < 1000 {
@@ -84,7 +86,34 @@ pub fn wave_system(
 
 // pub fn despawn_mobs_far_away() {}
 
-pub fn despawn_dead_enemies_emit_enemy_killed() {}
+// pub fn despawn_dead_enemies_emit_enemy_killed(
+//    mut cmd: Commands,
+//    q: Query<(Entity, &Enemy, &EnemyKind, &Transform)>,
+//    mut ew: EventWriter<crate::loot::EnemyDied>,
+// ) {
+//    for (ent, enm, kind, t) in q.iter() {
+//       if enm.health <= 0 {
+//          ew.send(EnemyDied { enemy_kind: kind.clone(), x: t.translation.x, y: t.translation.y });
+//          cmd.entity(ent).despawn();
+//       }
+//    }
+// }
+pub fn enemy_despawn_and_emit_enemydied(
+   mut cmd: Commands,
+   mut ev_enemy_died: EventWriter<EnemyDied>,
+   q: Query<(Entity, &EnemyKind, &Enemy, &Transform)>,
+) {
+   for (e, kind, stats, t) in q.iter() {
+      if stats.health <= 0 {
+         ev_enemy_died.send(EnemyDied {
+            enemy_kind: *kind,
+            x: t.translation.x,
+            y: t.translation.y,
+         });
+         cmd.entity(e).despawn();
+      }
+   }
+}
 
 pub fn get_random_location_around_player(t: &Transform) -> (f32, f32) {
    // TODO: set proper radius
@@ -125,13 +154,34 @@ pub fn spawn_slime(
       Melee,
       Name::new("Slime Enemy"),
       sprite,
-      Enemy { life: 1, speed: 50.0, damage: 1, knockback_resistance: 0.0, xp: 10 },
+      Enemy { health: 10, speed: 50.0, damage: 1, knockback_resistance: 0.0, xp: 10 },
       Transform::from_xyz(x, y, 0.0),
       RigidBody::Dynamic,
       Friction::new(0.0),
       Collider::circle(4.0),
       LockedAxes::ROTATION_LOCKED,
+      CollisionLayers::new(
+         MyCollisionLayers::Enemy,
+         [
+            MyCollisionLayers::Player,
+            MyCollisionLayers::PlayerProjectile,
+            MyCollisionLayers::Doodad,
+            MyCollisionLayers::Enemy,
+         ],
+      ),
+      HitCooldowns::default(),
+      CollidingEntities::default(),
    ));
+}
+
+pub fn tick_hit_cooldowns(
+   time: Res<Time>,
+   mut q: Query<&mut HitCooldowns>,
+) {
+   for mut hit_cooldowns in q.iter_mut() {
+      hit_cooldowns.dagger_cooldown.tick(time.delta());
+      hit_cooldowns.book_cooldown.tick(time.delta());
+   }
 }
 
 pub fn spawn_kobold_archer(
@@ -145,7 +195,7 @@ pub fn spawn_kobold_archer(
       EnemyKind::KoboldArcher,
       Name::new("Kobold Archer Enemy"),
       sprite,
-      Enemy { life: 1, speed: 30.0, damage: 1, knockback_resistance: 0.0, xp: 10 },
+      Enemy { health: 1, speed: 30.0, damage: 1, knockback_resistance: 0.0, xp: 10 },
       Ranged {
          damage: 1,
          range: 150.0,
@@ -159,7 +209,60 @@ pub fn spawn_kobold_archer(
       Friction::new(0.0),
       Collider::circle(6.0),
       LockedAxes::ROTATION_LOCKED,
+      CollisionLayers::new(
+         MyCollisionLayers::Enemy,
+         [
+            MyCollisionLayers::Player,
+            MyCollisionLayers::PlayerProjectile,
+            MyCollisionLayers::Doodad,
+            MyCollisionLayers::Enemy,
+         ],
+      ),
+      HitCooldowns::default(),
+      CollidingEntities::default(),
    ));
+}
+
+pub fn enemy_take_dmg_system(
+   mut q: Query<(&mut Enemy, &mut HitCooldowns, &CollidingEntities)>,
+   // player_projs: Query<Entity, With<PlayerProjectile>>,
+   mut daggers: Query<(Entity, &mut DaggerAttackProjectile)>,
+   mut wasps: Query<(Entity, &mut WaspAttackProjectile)>,
+) {
+   // info!("WE ACTUALU WORK");
+   // info!("sus: {:?}", q);
+
+   for (mut enemy, mut hit_cd, coll) in q.iter_mut() {
+      if !coll.is_empty() {
+         for entity in coll.iter() {
+            // info!("trying to get daggers entity");
+            // info!("got {:?}", daggers.get_mut(*entity));
+            // let dagger_e = daggers.iter().;
+
+            // match daggers.get_mut(*entity) {
+            //    Ok((proj_entity, mut dagger_proj)) => {
+            //       if hit_cd.dagger_cooldown.finished() {
+            //          enemy.health -= dagger_proj.damage;
+            //          hit_cd.dagger_cooldown.reset();
+            //          dagger_proj.speed /= 2.0;
+            //          // info!("Dagger attack hit! Enemy health: {}", enemy.health);
+            //          // panic!("breakpoint");
+            //       }
+            //    }
+            //    // Err(e) => info!("Not dagga!?: {:?}", e),
+            //    Err(e) => info!("Not dagger."),
+            // }
+            if let Ok((proj_entity, mut dagger_proj)) = daggers.get_mut(*entity) {
+               if hit_cd.dagger_cooldown.finished() {
+                  enemy.health -= dagger_proj.damage;
+                  hit_cd.dagger_cooldown.reset();
+                  dagger_proj.speed *= 0.7;
+                  // commands.entity(proj_entity).despawn(); // Despawn the projectile
+               }
+            }
+         }
+      }
+   }
 }
 
 pub fn melee_ai(
@@ -230,7 +333,7 @@ pub fn spawn_projectile(
    y: f32,
    target_x: f32,
    target_y: f32,
-   damage: u32,
+   damage: i32,
    sprite_name: &str,
    debris_name: &str,
    projectile_speed: f32,
@@ -255,8 +358,8 @@ pub fn spawn_projectile(
       LockedAxes::ROTATION_LOCKED,
       Sensor,
       CollisionLayers::new(
-         MyColLayers::EnemyProjectile,
-         [MyColLayers::Player, MyColLayers::Doodad],
+         MyCollisionLayers::EnemyProjectile,
+         [MyCollisionLayers::Player, MyCollisionLayers::Doodad],
       ),
    ));
 }
@@ -342,13 +445,22 @@ pub fn spawn_orc_axeman(
       Melee,
       Name::new("Orc Axeman"),
       sprite,
-      Enemy { life: 4, speed: 20.0, damage: 5, knockback_resistance: 0.0, xp: 20 },
+      Enemy { health: 4, speed: 20.0, damage: 5, knockback_resistance: 0.0, xp: 20 },
       Transform::from_xyz(x, y, 0.0),
       RigidBody::Dynamic,
       Friction::new(0.0),
       Collider::circle(5.0),
       ColliderDensity(100.0),
       LockedAxes::ROTATION_LOCKED,
+      CollisionLayers::new(
+         MyCollisionLayers::Enemy,
+         [
+            MyCollisionLayers::Player,
+            MyCollisionLayers::PlayerProjectile,
+            MyCollisionLayers::Doodad,
+            MyCollisionLayers::Enemy,
+         ],
+      ),
    ));
 }
 
@@ -370,7 +482,7 @@ pub fn spawn_wizard_boss(
       Collider::circle(8.0),
       ColliderDensity(100.0),
       LockedAxes::ROTATION_LOCKED,
-      Enemy { life: 100, speed: 20.0, damage: 10, knockback_resistance: 0.0, xp: 100 },
+      Enemy { health: 100, speed: 20.0, damage: 10, knockback_resistance: 0.0, xp: 100 },
       Ranged {
          damage: 1,
          range: 130.0,
@@ -386,6 +498,15 @@ pub fn spawn_wizard_boss(
          debris_sprite_name: String::from("wizard_boss_attack_debris"),
          projectile_speed: 100.0,
       },
+      CollisionLayers::new(
+         MyCollisionLayers::Enemy,
+         [
+            MyCollisionLayers::Player,
+            MyCollisionLayers::PlayerProjectile,
+            MyCollisionLayers::Doodad,
+            MyCollisionLayers::Enemy,
+         ],
+      ),
    ));
 }
 

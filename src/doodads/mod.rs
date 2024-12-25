@@ -21,11 +21,11 @@ impl Plugin for DoodadPlugin {
       &self,
       app: &mut bevy::prelude::App,
    ) {
-      app.add_systems(OnEnter(crate::GameState::InGame), (spawn_doodads));
+      app.add_systems(OnEnter(crate::GameState::InGame), (spawn_candelabras));
    }
 }
 
-fn spawn_doodads(
+fn spawn_candelabras(
    mut commands: Commands,
    sprites_collection: Res<crate::SpritesCollection>,
 ) {
@@ -57,6 +57,7 @@ fn spawn_grass_cluster(
       cmd.spawn((Name::new("Grass Doodad"), sprite, Transform::from_translation(sprite_pos)));
    }
 }
+
 fn add_points_of_interest(
    cmd: &mut Commands,
    sprites_collection: &Res<SpritesCollection>,

@@ -1,6 +1,6 @@
 use crate::{
    get_sprite, spawn_projectile, AttackTimer, Boss, ClosestEnemy, Debris, Enemy, Player,
-   SpritesCollection,
+   PlayerProjectile, SpritesCollection,
 };
 use avian2d::prelude::*;
 use bevy::prelude::*;
@@ -11,9 +11,9 @@ use rand::prelude::*;
 #[derive(Component)]
 pub struct WaspAttack;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub struct WaspAttackProjectile {
-   pub damage: u32,
+   pub damage: i32,
    pub speed: f32,
    pub timeout: Timer,
    pub sprite_name: String,
@@ -23,7 +23,7 @@ pub struct WaspAttackProjectile {
 impl Default for WaspAttackProjectile {
    fn default() -> Self {
       WaspAttackProjectile {
-         damage: 1,
+         damage: 100,
          speed: 100.,
          timeout: Timer::from_seconds(3.0, TimerMode::Once),
          sprite_name: String::from("wasp"),
@@ -34,6 +34,7 @@ impl Default for WaspAttackProjectile {
 
 #[derive(Bundle)]
 pub struct WaspAttackBundle {
+   pub tag: PlayerProjectile,
    pub attack_timer: AttackTimer,
    pub wasp_attack: WaspAttack,
    pub wasp_attack_projectile: WaspAttackProjectile,
@@ -42,6 +43,7 @@ pub struct WaspAttackBundle {
 impl Default for WaspAttackBundle {
    fn default() -> Self {
       WaspAttackBundle {
+         tag: PlayerProjectile,
          attack_timer: AttackTimer { timer: Timer::from_seconds(0.6, TimerMode::Once) },
          wasp_attack: WaspAttack,
          wasp_attack_projectile: WaspAttackProjectile::default(),

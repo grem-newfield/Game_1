@@ -30,6 +30,7 @@ impl Plugin for AttacksPlugin {
    ) {
       // RES
       app.insert_resource(ClosestEnemy::default());
+      app.insert_resource(DaggerAttackConf::default());
       // ENTER
       app.add_systems(OnEnter(GameState::InGame), (add_dagger_attack));
       // UPDATE
@@ -39,6 +40,7 @@ impl Plugin for AttacksPlugin {
             tick_attack_timers,
             timeout_dagger_attack_projectiles,
             set_closest_enemy,
+            move_dagger_projectiles,
             dagger_attack_system.after(set_closest_enemy),
          )
             .run_if(in_state(GameState::InGame)),

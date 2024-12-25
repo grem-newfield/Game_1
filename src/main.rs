@@ -19,6 +19,7 @@ use bevy_asset_loader::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use leafwing_input_manager::prelude::*;
+use loot::EnemyLootPlugin;
 use std::iter::zip;
 
 mod animations;
@@ -70,7 +71,7 @@ enum GameState {
 }
 
 #[derive(PhysicsLayer, Default)]
-enum MyColLayers {
+enum MyCollisionLayers {
    #[default]
    Default,
    Player,
@@ -78,6 +79,8 @@ enum MyColLayers {
    Enemy,
    EnemyProjectile,
    Doodad,
+   XpOrb,
+   PowerUp,
 }
 
 // TODO: LAYUEARERAS
@@ -123,6 +126,7 @@ fn main() {
       PostProcessPlugin,
       LoadSpritesPlugin,
       InGameUiPlugin,
+      EnemyLootPlugin,
       // SaveLoadPlugin,
       // TerrainPlugin,
    ));
