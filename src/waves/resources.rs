@@ -27,9 +27,9 @@ impl Default for WaveSpawnConfig {
          // boss_spawn_timer: Timer::from_seconds(10.0 * 60.0, TimerMode::Once),
 
          // test values
-         wave_difficulty_timer: Timer::from_seconds(1.0, TimerMode::Once),
+         wave_difficulty_timer: Timer::from_seconds(5.0, TimerMode::Once),
          spawn_timer: Timer::from_seconds(0.1, TimerMode::Once),
-         boss_spawn_timer: Timer::from_seconds(10., TimerMode::Once),
+         boss_spawn_timer: Timer::from_seconds(30., TimerMode::Once),
       }
    }
 }

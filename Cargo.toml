@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 avian2d = { git = "https://github.com/Jondolf/avian", branch = "main" }
 # avian2d = "0.1.2"
-bevy = { version = "0.15" } #, features = ["dynamic_linking"] }
+bevy = { version = "0.15" , features = ["dynamic_linking"] }
 bevy-inspector-egui = "0.28.0"
 bevy_asset_loader = "0.22.0"
 # bevy_ecs_tilemap = "0.15.0"

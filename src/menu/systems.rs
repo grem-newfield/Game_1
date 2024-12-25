@@ -32,7 +32,10 @@ pub fn menu(
 
 pub fn setting_button() {}
 
-pub fn setup_menu(mut cmd: Commands) {
+pub fn setup_menu(
+   mut cmd: Commands,
+   ass: Res<AssetServer>,
+) {
    // let play_button_entity = cmd
    //    .spawn(Node {
    //       // center button
@@ -91,7 +94,7 @@ pub fn setup_menu(mut cmd: Commands) {
                   .spawn((
                      Button,
                      Node {
-                        width: Val::Px(150.0),
+                        width: Val::Px(350.0),
                         height: Val::Px(65.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -102,7 +105,11 @@ pub fn setup_menu(mut cmd: Commands) {
                   .with_children(|parent| {
                      parent.spawn((
                         Text::new("Play"),
-                        TextFont { font_size: 30.0, ..Default::default() },
+                        TextFont {
+                           font: ass.load("fonts/PPMondwest-Regular.otf"),
+                           font_size: 30.0,
+                           ..Default::default()
+                        },
                         TextColor(Color::WHITE),
                      ));
                   });
@@ -110,7 +117,7 @@ pub fn setup_menu(mut cmd: Commands) {
                   .spawn((
                      Button,
                      Node {
-                        width: Val::Px(150.0),
+                        width: Val::Px(350.0),
                         height: Val::Px(65.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -121,7 +128,11 @@ pub fn setup_menu(mut cmd: Commands) {
                   .with_children(|parent| {
                      parent.spawn((
                         Text::new("Toggle Fullscreen"),
-                        TextFont { font_size: 30.0, ..Default::default() },
+                        TextFont {
+                           font: ass.load("fonts/PPMondwest-Regular.otf"),
+                           font_size: 30.0,
+                           ..Default::default()
+                        },
                         TextColor(Color::WHITE),
                      ));
                   });
@@ -129,7 +140,7 @@ pub fn setup_menu(mut cmd: Commands) {
                   .spawn((
                      Button,
                      Node {
-                        width: Val::Px(150.0),
+                        width: Val::Px(350.0),
                         height: Val::Px(65.0),
                         justify_content: JustifyContent::Center,
                         align_items: AlignItems::Center,
@@ -140,7 +151,11 @@ pub fn setup_menu(mut cmd: Commands) {
                   .with_children(|parent| {
                      parent.spawn((
                         Text::new("Exit"),
-                        TextFont { font_size: 30.0, ..Default::default() },
+                        TextFont {
+                           font: ass.load("fonts/PPMondwest-Regular.otf"),
+                           font_size: 30.0,
+                           ..Default::default()
+                        },
                         TextColor(Color::WHITE),
                      ));
                   });

@@ -104,7 +104,7 @@ pub fn setup_player(
       InputManagerBundle::with_map(input_map),
       RigidBody::Kinematic,
       Collider::circle(4.0),
-      // CollidingEntities::default(),
+      CollidingEntities::default(),
       CollisionLayers::new(
          MyCollisionLayers::Player,
          [
@@ -140,7 +140,7 @@ pub fn follow_cam(
       pixel_cam.translation = target.translation;
    }
    // TODO: reenable smooth / remake smooth
-   return;
+   // return;
 
    let smooth_time = 0.3; // This controls how quickly the camera reaches the target. Lower values make it faster.
 

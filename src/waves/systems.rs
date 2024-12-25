@@ -1,10 +1,10 @@
 use core::panic;
-use std::f32::consts::PI;
+use std::f32::consts::{PI, TAU};
 
 use crate::{
    get_sprite, Boss, DaggerAttackProjectile, Debris, Enemy, EnemyDied, EnemyKind, EnemyProjectile,
    GameState, HitCooldowns, Melee, MyCollisionLayers, Player, PlayerProjectile, Ranged,
-   SpritesCollection, WaspAttackProjectile, WaveSpawnConfig, WaveState, WizardBoss,
+   SpritesCollection, WaspAttackProjectile, WaveSpawnConfig, WaveState, WizardBoss, XpOrb,
    PROJECTILE_TIMEOUT, RES_WIDTH,
 };
 use avian2d::prelude::*;
@@ -51,7 +51,7 @@ pub fn wave_system(
       // info!("Boss spawned");
    }
    // MOB
-   if wsc.spawn_timer.just_finished() && state.mob_count < 1000 {
+   if wsc.spawn_timer.just_finished() && state.mob_count < 6000 {
       let (x, y) = get_random_location_around_player(&player_transform);
       match state.difficulty {
          0 => spawn_slime(&mut cmd, &sprites_collection, x, y),
@@ -64,7 +64,7 @@ pub fn wave_system(
                spawn_kobold_archer(&mut cmd, &sprites_collection, x, y);
             }
          }
-         2 => {
+         _ => {
             // Mix of Slimes, Kobold Archers, and another enemy type
             let mut rng = rand::thread_rng();
             let mob_choice = rng.gen_range(0..3);
@@ -75,7 +75,6 @@ pub fn wave_system(
                _ => {}
             }
          }
-         _ => {}
       }
       state.mob_count += 1;
       wsc.spawn_timer.reset();
@@ -117,13 +116,13 @@ pub fn enemy_despawn_and_emit_enemydied(
 }
 
 pub fn get_random_location_around_player(t: &Transform) -> (f32, f32) {
-   // TODO: set proper radius
-   let radius = (RES_WIDTH) as f32 * 0.7;
+   let radius = (RES_WIDTH) as f32 * 0.8;
    let mut rng = rand::thread_rng();
-   let theta = rng.gen::<f32>() % 2.0 * PI;
+   // let theta = rng.gen::<f32>() % TAU;
+   let theta = rng.gen_range(0..360) as f32 * (PI / 180.);
    let x = radius * theta.cos();
    let y = radius * theta.sin();
-   (x, y)
+   (t.translation.x + x, t.translation.y + y)
 }
 
 // pub fn spawn_mob(
@@ -225,6 +224,7 @@ pub fn spawn_kobold_archer(
 }
 
 pub fn enemy_take_dmg_system(
+   mut cmd: Commands,
    mut q: Query<(&mut Enemy, &mut HitCooldowns, &CollidingEntities)>,
    mut daggers: Query<(Entity, &mut DaggerAttackProjectile)>,
    mut wasps: Query<(Entity, &mut WaspAttackProjectile)>,
@@ -425,7 +425,7 @@ pub fn spawn_orc_axeman(
       Melee,
       Name::new("Orc Axeman"),
       sprite,
-      Enemy { health: 500, speed: 20.0, damage: 5, knockback_resistance: 0.0, xp: 20 },
+      Enemy { health: 500, speed: 25.0, damage: 5, knockback_resistance: 0.0, xp: 20 },
       Transform::from_xyz(x, y, 0.0),
       RigidBody::Dynamic,
       Friction::new(0.0),
@@ -460,7 +460,7 @@ pub fn spawn_wizard_boss(
       Name::new("Wizard Boss"),
       Transform::from_xyz(x, y, 0.0),
       LockedAxes::ROTATION_LOCKED,
-      Enemy { health: 100, speed: 20.0, damage: 10, knockback_resistance: 0.0, xp: 100 },
+      Enemy { health: 800, speed: 20.0, damage: 10, knockback_resistance: 0.0, xp: 100 },
       Ranged {
          damage: 1,
          range: 130.0,
