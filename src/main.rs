@@ -16,10 +16,9 @@ use bevy::{
    window::{WindowResized, WindowResolution},
 };
 use bevy_asset_loader::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
+// use bevy_ecs_tilemap::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use leafwing_input_manager::prelude::*;
-use loot::EnemyLootPlugin;
 use std::iter::zip;
 
 mod animations;
@@ -44,6 +43,7 @@ use animations::*;
 use attacks::*;
 use doodads::*;
 use leveling::*;
+use loot::*;
 use menu::*;
 use pickups::*;
 use player::*;
@@ -103,7 +103,7 @@ fn main() {
 
    // LIB PLUGINS
    app.add_plugins((
-      TilemapPlugin,
+      // TilemapPlugin,
       // WorldInspectorPlugin::new(),
       InputManagerPlugin::<Action>::default(),
    ));
@@ -126,7 +126,7 @@ fn main() {
       PostProcessPlugin,
       LoadSpritesPlugin,
       InGameUiPlugin,
-      EnemyLootPlugin,
+      LootPlugin,
       // SaveLoadPlugin,
       // TerrainPlugin,
    ));

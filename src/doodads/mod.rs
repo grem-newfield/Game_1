@@ -11,7 +11,7 @@ use std::f32::consts::PI;
 use crate::{get_sprite, GameState, Player, SpritesCollection};
 use avian2d::prelude::*;
 use bevy::prelude::*;
-use bevy_ecs_tilemap::prelude::*;
+// use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
 
 pub struct DoodadPlugin;

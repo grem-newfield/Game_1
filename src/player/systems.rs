@@ -34,6 +34,8 @@ pub fn toggle_pause_ingame(
    state: Res<State<GameState>>,
    mut next_state: ResMut<NextState<GameState>>,
 ) {
+   // TODO: use substates for this, dont switch to InGame
+   return;
    if action_state.just_pressed(&Action::Pause) {
       match state.get() {
          GameState::InGame => {
@@ -94,7 +96,7 @@ pub fn setup_player(
          last_position: Vec3::ZERO,
          damage_cooldown: Timer::from_seconds(1.0, TimerMode::Once),
          level: 0,
-         experience: 0.0,
+         experience: 0,
          kills: 0,
       },
       // Transform::from_xyz(0., 0., 0.).with_scale(Vec3::ONE),
@@ -231,14 +233,6 @@ pub fn handle_player_collisions(
             commands.entity(colliding_entity).despawn(); // Example: Despawn the loot after collection
          }
       }
-   }
-}
-
-pub fn check_level_up(mut player: Single<&mut Player>) {
-   if player.experience >= 100.0 {
-      player.experience -= 100.0;
-      player.level += 1;
-      // TODO: summon screen here with weapon update
    }
 }
 

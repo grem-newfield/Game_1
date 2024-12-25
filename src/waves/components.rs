@@ -37,7 +37,7 @@ pub struct Enemy {
    pub speed: f32,
    pub damage: i32,
    pub knockback_resistance: f32,
-   pub xp: u32,
+   pub xp: i32,
 }
 
 #[derive(Component, Clone)]
@@ -85,4 +85,5 @@ pub struct EnemyDied {
    pub enemy_kind: EnemyKind,
    pub x: f32,
    pub y: f32,
+   pub experience: i32,
 }

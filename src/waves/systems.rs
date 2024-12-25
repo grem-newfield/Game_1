@@ -109,6 +109,7 @@ pub fn enemy_despawn_and_emit_enemydied(
             enemy_kind: *kind,
             x: t.translation.x,
             y: t.translation.y,
+            experience: stats.xp,
          });
          cmd.entity(e).despawn();
       }
@@ -225,39 +226,18 @@ pub fn spawn_kobold_archer(
 
 pub fn enemy_take_dmg_system(
    mut q: Query<(&mut Enemy, &mut HitCooldowns, &CollidingEntities)>,
-   // player_projs: Query<Entity, With<PlayerProjectile>>,
    mut daggers: Query<(Entity, &mut DaggerAttackProjectile)>,
    mut wasps: Query<(Entity, &mut WaspAttackProjectile)>,
 ) {
-   // info!("WE ACTUALU WORK");
-   // info!("sus: {:?}", q);
-
    for (mut enemy, mut hit_cd, coll) in q.iter_mut() {
       if !coll.is_empty() {
          for entity in coll.iter() {
-            // info!("trying to get daggers entity");
-            // info!("got {:?}", daggers.get_mut(*entity));
-            // let dagger_e = daggers.iter().;
-
-            // match daggers.get_mut(*entity) {
-            //    Ok((proj_entity, mut dagger_proj)) => {
-            //       if hit_cd.dagger_cooldown.finished() {
-            //          enemy.health -= dagger_proj.damage;
-            //          hit_cd.dagger_cooldown.reset();
-            //          dagger_proj.speed /= 2.0;
-            //          // info!("Dagger attack hit! Enemy health: {}", enemy.health);
-            //          // panic!("breakpoint");
-            //       }
-            //    }
-            //    // Err(e) => info!("Not dagga!?: {:?}", e),
-            //    Err(e) => info!("Not dagger."),
-            // }
             if let Ok((proj_entity, mut dagger_proj)) = daggers.get_mut(*entity) {
                if hit_cd.dagger_cooldown.finished() {
                   enemy.health -= dagger_proj.damage;
                   hit_cd.dagger_cooldown.reset();
                   dagger_proj.speed *= 0.7;
-                  // commands.entity(proj_entity).despawn(); // Despawn the projectile
+                  // commands.entity(proj_entity).despawn(); // Despawn the projectile?
                }
             }
          }
@@ -445,7 +425,7 @@ pub fn spawn_orc_axeman(
       Melee,
       Name::new("Orc Axeman"),
       sprite,
-      Enemy { health: 4, speed: 20.0, damage: 5, knockback_resistance: 0.0, xp: 20 },
+      Enemy { health: 500, speed: 20.0, damage: 5, knockback_resistance: 0.0, xp: 20 },
       Transform::from_xyz(x, y, 0.0),
       RigidBody::Dynamic,
       Friction::new(0.0),
@@ -461,6 +441,8 @@ pub fn spawn_orc_axeman(
             MyCollisionLayers::Enemy,
          ],
       ),
+      HitCooldowns::default(),
+      CollidingEntities::default(),
    ));
 }
 
@@ -477,10 +459,6 @@ pub fn spawn_wizard_boss(
       Boss,
       Name::new("Wizard Boss"),
       Transform::from_xyz(x, y, 0.0),
-      RigidBody::Dynamic,
-      Friction::new(0.0),
-      Collider::circle(8.0),
-      ColliderDensity(100.0),
       LockedAxes::ROTATION_LOCKED,
       Enemy { health: 100, speed: 20.0, damage: 10, knockback_resistance: 0.0, xp: 100 },
       Ranged {
@@ -498,14 +476,22 @@ pub fn spawn_wizard_boss(
          debris_sprite_name: String::from("wizard_boss_attack_debris"),
          projectile_speed: 100.0,
       },
-      CollisionLayers::new(
-         MyCollisionLayers::Enemy,
-         [
-            MyCollisionLayers::Player,
-            MyCollisionLayers::PlayerProjectile,
-            MyCollisionLayers::Doodad,
+      (
+         HitCooldowns::default(),
+         RigidBody::Dynamic,
+         Friction::new(0.0),
+         Collider::circle(8.0),
+         ColliderDensity(100.0),
+         CollidingEntities::default(),
+         CollisionLayers::new(
             MyCollisionLayers::Enemy,
-         ],
+            [
+               MyCollisionLayers::Player,
+               MyCollisionLayers::PlayerProjectile,
+               MyCollisionLayers::Doodad,
+               MyCollisionLayers::Enemy,
+            ],
+         ),
       ),
    ));
 }

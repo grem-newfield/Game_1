@@ -1,28 +1,29 @@
 use crate::{
    get_sprite, Action, AttackTimer, DaggerAttack, Enemy, EnemyDied, EnemyKind, GameState,
-   PlayerMoveEvent, ProjectileArt, SpritesCollection,
+   MyCollisionLayers, Player, PlayerMoveEvent, ProjectileArt, SpritesCollection,
 };
 use avian2d::prelude::*;
 use bevy::{ecs::bundle, prelude::*};
 use leafwing_input_manager::prelude::*;
 
-pub struct EnemyLootPlugin;
+pub struct LootPlugin;
 
-impl Plugin for EnemyLootPlugin {
+impl Plugin for LootPlugin {
    fn build(
       &self,
       app: &mut App,
    ) {
-      app.add_systems(FixedUpdate, (dummy).run_if(in_state(GameState::InGame)));
+      app.add_systems(FixedUpdate, (handle_enemydied).run_if(in_state(GameState::InGame)));
       // .add_systems(FixedUpdate, (fit_canvas_to_window,));
    }
 }
 fn dummy() {}
 
-fn spawn_exp_orb(
+fn handle_enemydied(
    mut cmd: Commands,
    mut er: EventReader<EnemyDied>,
-   sprites_collection: &Res<SpritesCollection>,
+   sprites_collection: Res<SpritesCollection>,
+   mut player: Single<&mut Player>,
 ) {
    for e in er.read() {
       let sprite = get_sprite(&mut cmd, &sprites_collection, "crystal");
@@ -34,6 +35,15 @@ fn spawn_exp_orb(
          Friction::new(0.0),
          Collider::circle(4.0),
          LockedAxes::ROTATION_LOCKED,
+         CollisionLayers::new(MyCollisionLayers::XpOrb, [MyCollisionLayers::Player]),
+         CollidingEntities::default(),
       ));
+      player.kills += 1;
+      player.experience += e.experience;
+      if player.experience >= 100 {
+         player.experience -= 100;
+         player.level += 1;
+         // TODO: summon screen with weapon update
+      }
    }
 }
